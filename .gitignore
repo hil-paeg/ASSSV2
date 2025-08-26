@@ -1,0 +1,89 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+out/
+.next/
+.cache/
+.parcel-cache/
+.turbo/
+
+# Next.js build output
+.next
+out
+.cache
+
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Env files
+.env
+.env.*.local
+
+# Editor settings
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+Thumbs.db
+/generated/prisma
+
+// ...existing code...
+# Ignore uploaded files and runtime artifacts
+/uploads/
+server/uploads/
+public/*.mp4
+public/Debugging1.mp4
+public/thumb*.png
+
+# Prisma generated client (regenerate with `npx prisma generate`)
+/generated/prisma/
+
+# Coverage and test reports
+coverage/
+.nyc_output/
+
+# Optional caches / editors (already present but ensure)
+.cache/
+.vscode/
+.idea/
+
+# Large lockfiles (usually commit package-lock.json; only ignore if you purposely don't want it)
+/pnpm-lock.yaml
+/bun.lockb
+
+
+public/*.png
+public/*.mp4
+bun.lockb
+public/thumb1.png
+public/thumb2.png
+public/thumb3.png
+public/Debugging1.mp4
+bun.lockb
+
+
+*.mp4
+*.mov
+*.avi
+*.zip
+*.exe
+bun.lockb
+cls
