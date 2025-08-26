@@ -6,7 +6,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -22,3 +21,40 @@ model Message {
   createdAt  DateTime @default(now())
 }
 // ...existing code...
+
+
+model ClientInfo {
+  client_id          Int             @id @default(autoincrement())
+  name               String
+  start_date         DateTime
+  payment_cycle      String?         // e.g., Monthly, Quarterly, Yearly
+  allowed_tickets    Int?
+  total_tickets_used Int             @default(0)
+
+  members            ClientMember[]
+  tickets            Ticket[]      // keep for future; not used in this flow
+}
+
+model ClientMember {
+  member_id        Int        @id @default(autoincrement())
+  client_id        Int
+  member_name      String
+  designation      String     // e.g., Electrical Admin
+  email            String
+  phone_number     String?
+  escalation_level Int        // 1..5 unique per client
+
+  client           ClientInfo @relation(fields: [client_id], references: [client_id])
+
+  @@unique([client_id, escalation_level])
+  @@index([email])
+}
+
+model Ticket {
+  ticket_id    Int        @id @default(autoincrement())
+  client_id    Int
+  issue_title  String
+  created_at   DateTime   @default(now())
+
+  client       ClientInfo @relation(fields: [client_id], references: [client_id])
+}
