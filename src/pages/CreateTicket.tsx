@@ -23,10 +23,11 @@ const CreateTicket: React.FC = () => {
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('medium');
   const [attachments, setAttachments] = useState<File[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+ const [isLoading, setIsLoading] = useState(false);
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([{ time: '', description: '' }]);
   const [location, setLocation] = useState('');
   const [actionsTaken, setActionsTaken] = useState('');
+  const [creatorName, setCreatorName] = useState('');  // New field for creator_name
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [ticketNumber, setTicketNumber] = useState('');
 
@@ -57,25 +58,53 @@ const CreateTicket: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!user?.ticketsRemaining || user.ticketsRemaining <= 0) {
-      toast({
-        title: 'Ticket Limit Reached',
-        description: 'You have used all your allocated tickets for this year.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     setIsLoading(true);
-    
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    const generatedTicketNumber = `TICKET-${Math.floor(100000 + Math.random() * 900000)}`;
-    setTicketNumber(generatedTicketNumber);
 
-    setShowSuccessDialog(true);
-    setIsLoading(false);
+    try {
+      // Convert attachments to base64 (or file names; extend for real uploads)
+      const attachmentsBase64 = await Promise.all(
+        attachments.map(file => new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => resolve(reader.result as string);
+        }))
+      );
+
+      const formData = {
+        issue_title: title,
+        priority,
+        description,
+        location,
+        actions_performed: actionsTaken,
+        creator_name: creatorName,
+        attachments: attachmentsBase64.join(','),  // Comma-separated base64 strings; adjust as needed
+        // Timeline events can be stored in comments or a separate field; here as JSON in comments for simplicity
+        comments: JSON.stringify(timelineEvents),
+      };
+
+      const response = await fetch('/api/tickets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create ticket');
+      }
+
+      const newTicket = await response.json();
+      setTicketNumber(`TICKET-${newTicket.ticket_id}`);  // Use real ticket_id from DB
+      setShowSuccessDialog(true);
+      toast({ title: 'Success', description: 'Ticket created successfully!' });
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (user?.role === 'admin') {
@@ -215,6 +244,17 @@ const CreateTicket: React.FC = () => {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="creator-name">Ticket Creator Name</Label>
+              <Input
+                id="creator-name"
+                placeholder="Input Ticket creator name"
+                value={creatorName}
+                onChange={(e) => setCreatorName(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label>Attachments (Screenshots, Documents)</Label>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
                 <input
@@ -261,20 +301,11 @@ const CreateTicket: React.FC = () => {
                 </div>
               )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="actions-taken">Ticket creator name</Label>
-              <Textarea
-                id="creator-name"
-                placeholder="Input Ticket creator name"
-                value={actionsTaken}
-                onChange={(e) => setActionsTaken(e.target.value)}
-                rows={4}
-              />
-            </div>
+
             <div className="flex gap-4 pt-4">
               <Button 
                 type="submit" 
-                disabled={isLoading || !title || !description}
+                disabled={isLoading || !title || !description || !creatorName}
                 className="flex-1"
               >
                 {isLoading ? 'Creating Ticket...' : 'Create Ticket'}
@@ -300,7 +331,7 @@ const CreateTicket: React.FC = () => {
             <DialogTitle>Ticket Created Successfully</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <p>Ticket created for number: <strong>{ticketNumber}</strong></p>
+            <p>Ticket number: <strong>{ticketNumber}</strong></p>
             <p>Date and Time: <strong>{new Date().toLocaleString('en-US', {
               year: 'numeric',
               month: 'long',

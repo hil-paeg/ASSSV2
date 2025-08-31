@@ -49,6 +49,7 @@ const Sidebar: React.FC = () => {
     { name: 'Client Control', href: '/clientcontrol', icon: Users },
     { name: 'Knowledge Hub', href: '/knowledge', icon: FolderOpen },
     { name: 'Create Client', href: '/create-client', icon: Plus },
+     { name: 'client contract', href: '/client-contract', icon: Plus },
   ];
 
   const navItems = user?.role === 'admin' ? adminNavItems : userNavItems;

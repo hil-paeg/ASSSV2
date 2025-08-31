@@ -1,43 +1,39 @@
+'use client';
 
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Loader2, Shield, User, UserPlus } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import RegisterForm from './RegisterForm';
 
 const LoginForm: React.FC = () => {
   const { login, isLoading } = useAuth();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [activeTab, setActiveTab] = useState('user');
   const [showRegister, setShowRegister] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
-      await login(email, password, activeTab as 'user' | 'admin');
+      await login(username, password, activeTab as 'user' | 'admin');
       toast({
         title: 'Login Successful',
-        description: 'Welcome to AMC Portal!',
+        description: `Welcome to AMC Portal, ${activeTab === 'user' ? 'Client' : 'Admin'}!`,
       });
     } catch (error) {
       toast({
         title: 'Login Failed',
-        description: 'Invalid credentials. Please try again.',
+        description: 'Invalid username or password. Please try again.',
         variant: 'destructive',
       });
     }
   };
-
-  if (showRegister) {
-    return <RegisterForm onSwitchToLogin={() => setShowRegister(false)} />;
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -67,13 +63,13 @@ const LoginForm: React.FC = () => {
             <TabsContent value="user" className="mt-6">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="username">Username</Label>
                   <Input
-                    id="email"
-                    type="email"
-                    placeholder="user@company.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="username"
+                    type="text"
+                    placeholder="Enter username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
                     required
                   />
                 </div>
@@ -98,7 +94,6 @@ const LoginForm: React.FC = () => {
                     'Sign In as Client'
                   )}
                 </Button>
-                
                 <div className="text-center">
                   <button
                     type="button"
@@ -106,7 +101,7 @@ const LoginForm: React.FC = () => {
                     className="text-sm text-blue-600 hover:text-blue-800 flex items-center justify-center gap-1 mx-auto"
                   >
                     <UserPlus className="h-3 w-3" />
-                    New client? Create account
+                    New client? Contact Admin
                   </button>
                 </div>
               </form>
@@ -115,13 +110,13 @@ const LoginForm: React.FC = () => {
             <TabsContent value="admin" className="mt-6">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="admin-email">Admin Email</Label>
+                  <Label htmlFor="admin-username">Admin Username</Label>
                   <Input
-                    id="admin-email"
-                    type="email"
-                    placeholder="admin@support.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="admin-username"
+                    type="text"
+                    placeholder="admin@gmail.com"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
                     required
                   />
                 </div>
@@ -152,10 +147,8 @@ const LoginForm: React.FC = () => {
         </CardContent>
 
         <CardFooter className="text-center">
-          <div className="text-sm text-gray-500 space-y-1">
-            <p><strong>Demo Credentials:</strong></p>
-            <p>Client: user@company.com / password</p>
-            <p>Admin: admin@support.com / password</p>
+          <div className="text-sm text-gray-500">
+            <p>Contact admin for credentials.</p>
           </div>
         </CardFooter>
       </Card>

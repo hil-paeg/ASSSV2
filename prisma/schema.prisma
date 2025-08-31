@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -12,49 +6,108 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-// ...existing code...
-model Message {
-  id         Int      @id @default(autoincrement())
-  message    String?
-  sender     String   // new: "admin" or "client" or user id
-  recipient  String?  // optional: recipient id/role
-  createdAt  DateTime @default(now())
-}
-// ...existing code...
 
+model Client {
+  client_id       Int       @id
+  client_username String
+  client_password String
+  name            String
+  start_date      DateTime
+  payment_cycle   String?   // Monthly, Quarterly, Yearly
 
-model ClientInfo {
-  client_id          Int             @id @default(autoincrement())
-  name               String
-  start_date         DateTime
-  payment_cycle      String?         // e.g., Monthly, Quarterly, Yearly
-  allowed_tickets    Int?
-  total_tickets_used Int             @default(0)
-
-  members            ClientMember[]
-  tickets            Ticket[]      // keep for future; not used in this flow
+  members   ClientMember[]
+  tickets   Ticket[]
+  contracts ContractualTicket[]
+  messages  Message[]
 }
 
 model ClientMember {
   member_id        Int        @id @default(autoincrement())
   client_id        Int
   member_name      String
-  designation      String     // e.g., Electrical Admin
+  designation      String
   email            String
   phone_number     String?
-  escalation_level Int        // 1..5 unique per client
+  escalation_level Int
+  member_username  String
+  member_password  String
 
-  client           ClientInfo @relation(fields: [client_id], references: [client_id])
+  client           Client     @relation(fields: [client_id], references: [client_id])
 
   @@unique([client_id, escalation_level])
   @@index([email])
 }
 
-model Ticket {
-  ticket_id    Int        @id @default(autoincrement())
-  client_id    Int
-  issue_title  String
-  created_at   DateTime   @default(now())
+model ContractualTicket {
+  client_id             Int     @id
+  allowed_tickets       Int
+  total_tickets_used    Int     @default(0)
+  ticket_typeRS1        Int
+  ticket_typeRS1_used   Int     @default(0)
+  ticket_typeRS2        Int
+  ticket_typeRS2_used   Int     @default(0)
+  ticket_typeRS3_1      Int
+  ticket_typeRS3_1_used Int     @default(0)
+  ticket_typeRS3_2      Int
+  ticket_typeRS3_2_used Int     @default(0)
+  site_visit_frequency  Int
+  siteVisits            SiteVisit[]   // ✅ new relation
+  client                Client  @relation(fields: [client_id], references: [client_id])
+}
 
-  client       ClientInfo @relation(fields: [client_id], references: [client_id])
+model SiteVisit {
+  id          Int      @id @default(autoincrement())
+  client_id   Int
+  date        DateTime
+  contract    ContractualTicket @relation(fields: [client_id], references: [client_id])
+}
+
+model Ticket {
+  ticket_id         Int        @id @default(autoincrement())
+  client_id         Int
+  issue_title       String
+  priority          String?
+  description       String?
+  location          String?
+  actions_performed String?
+  attachments       String?
+  creator_name      String?
+  status            String     @default("open")
+  comments          String?
+  ticket_type       String?
+  created_at        DateTime   @default(now())
+  updated_at        DateTime   @updatedAt
+  closed_at         DateTime?
+  summary           String?
+  out_of_scope      Boolean    @default(false)
+
+  client            Client     @relation(fields: [client_id], references: [client_id])
+  close_ticket      CloseTicket?
+  messages          Message[]
+}
+
+model CloseTicket {
+  close_id    Int      @id @default(autoincrement())
+  ticket_id   Int      @unique
+  summary     String?
+  attachment  String?
+  out_of_scope Boolean @default(false)
+  experience  String?
+  time_saved  Int?
+  rating      Int?
+  created_at  DateTime @default(now())
+  ticket      Ticket   @relation(fields: [ticket_id], references: [ticket_id])
+}
+
+model Message {
+  msg_id      Int      @id @default(autoincrement())
+  ticket_id   Int
+  client_id   Int
+  sender_role String
+  msg_text    String
+  attachment  String?
+  created_at  DateTime @default(now())
+
+  ticket      Ticket   @relation(fields: [ticket_id], references: [ticket_id])
+  client      Client   @relation(fields: [client_id], references: [client_id])
 }
