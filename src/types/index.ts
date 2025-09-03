@@ -11,7 +11,6 @@ export interface User {
   phone?: string;
 }
 
-// Note that i also waant to implenet another thing that is after the ticket status is updated the ticket type is assigned and then that ticket type 
 
 export interface CloseTicket {
   close_id: number;
@@ -56,36 +55,6 @@ export interface Ticket {
   client?: { client_username: string };
   close_ticket?: CloseTicket;
 }
-// export interface Ticket {
-//   id: number;
-//   ticket_id: number;
-//   userId: number;
-//   client_id: number;
-//   title: string;
-//   issue_title: string;
-//   priority: string | null;
-//   description: string | null;
-//   location: string | null;
-//   actions_performed: string | null;
-//   attachments: string | null;
-//   creator_name: string | null;
-//   status: 'closed' | 'resolved' | 'in-progress' | 'raised';
-//   comments: string | null;
-//   ticketType: string | null;
-//   ticket_type: string | null;
-//   createdAt: string;
-//   created_at: string;
-//   updatedAt: string;
-//   updated_at: string;
-//   closed_at: string | null;
-//   summary: string | null;
-//   out_of_scope: boolean;
-//   clientClosed: boolean;
-//   adminClosed: boolean;
-//   feedback: string | null;
-//   out_of_scope_reason: string | null;
-//   client?: { client_username: string };
-// }
 export interface KnowledgeDoc {
   id: string;
   title: string;
@@ -117,6 +86,36 @@ export interface AuthContextType {
 
 
 
+// export interface Ticket {
+//   id: number;
+//   ticket_id: number;
+//   userId: number;
+//   client_id: number;
+//   title: string;
+//   issue_title: string;
+//   priority: string | null;
+//   description: string | null;
+//   location: string | null;
+//   actions_performed: string | null;
+//   attachments: string | null;
+//   creator_name: string | null;
+//   status: 'closed' | 'resolved' | 'in-progress' | 'raised';
+//   comments: string | null;
+//   ticketType: string | null;
+//   ticket_type: string | null;
+//   createdAt: string;
+//   created_at: string;
+//   updatedAt: string;
+//   updated_at: string;
+//   closed_at: string | null;
+//   summary: string | null;
+//   out_of_scope: boolean;
+//   clientClosed: boolean;
+//   adminClosed: boolean;
+//   feedback: string | null;
+//   out_of_scope_reason: string | null;
+//   client?: { client_username: string };
+// }
 
 
 // export interface Ticket {

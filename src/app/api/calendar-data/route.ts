@@ -37,7 +37,6 @@ export async function GET() {
   try {
     const siteVisits = await prisma.siteVisit.findMany({ select: { date: true } });
     const tickets = await prisma.ticket.findMany({ select: { created_at: true } });
-
     return NextResponse.json({
       siteVisits: siteVisits.map(s => ({ date: normalize(s.date) })),
       tickets: tickets.map(t => ({ created_at: normalize(t.created_at) })),

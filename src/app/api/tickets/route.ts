@@ -1830,7 +1830,7 @@ export async function GET(req: NextRequest) {
 
     let tickets;
     if (decoded.role === 'admin') {
-      console.log('Fetching tickets for admin');
+      // console.log('Fetching tickets for admin');
       tickets = await prisma.ticket.findMany({
         include: {
           client: { select: { client_username: true } },
@@ -1838,7 +1838,7 @@ export async function GET(req: NextRequest) {
         },
       });
     } else if (decoded.role === 'client') {
-      console.log('Fetching tickets for client, client_id:', Number(decoded.id));
+      // console.log('Fetching tickets for client, client_id:', Number(decoded.id));
       tickets = await prisma.ticket.findMany({
         where: { client_id: Number(decoded.id) },
         include: {
@@ -1847,7 +1847,7 @@ export async function GET(req: NextRequest) {
         },
       });
     } else if (decoded.role === 'clientMember') {
-      console.log('Fetching tickets for clientMember, client_id:', Number(decoded.clientId));
+      // console.log('Fetching tickets for clientMember, client_id:', Number(decoded.clientId));
       if (!decoded.clientId) {
         return NextResponse.json({ error: 'Invalid clientId for clientMember' }, { status: 400 });
       }
@@ -1862,7 +1862,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
     }
 
-    console.log('Fetched tickets:', tickets);
+    // console.log('Fetched tickets:', tickets);
     return NextResponse.json(tickets);
   } catch (error: any) {
     console.error('Error fetching tickets:', error.message, error.stack);
