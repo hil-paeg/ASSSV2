@@ -43,22 +43,22 @@
 //   };
 
 //   // Enhanced data for monthly view (current month focus)
-//   const calendarEvents = {
-//     '2025-07-01': { type: 'ticket_raised', title: 'System Monitoring Alert - High CPU Usage' },
-//     '2025-07-09': { type: 'site_visit', title: 'Hardware Maintenance - Storage Upgrade' },
-//     '2025-07-10': { type: 'ticket_raised', title: 'API Service Down' },
-//     '2025-07-11': { type: 'ticket_raised', title: 'Email Server Configuration Issue' },
-//     '2025-07-12': { type: 'ticket_raised', title: 'Network Connectivity Issue - Branch Office' },
-//     '2025-07-14': { type: 'site_visit', title: 'Firewall Update' },
-//     '2025-07-15': { type: 'site_visit', title: 'System Upgrade Visit - OS Updates' },
-//     '2025-07-16': { type: 'ticket_raised', title: 'Payment Gateway Error' },
-//     '2025-07-17': { type: 'ticket_raised', title: 'User Access Permission Error' },
-//     '2025-07-18': { type: 'ticket_raised', title: 'Software Crash - Inventory Module' },
-//     '2025-07-19': { type: 'site_visit', title: 'Server Room Temperature Check' },
-//     '2025-07-20': { type: 'site_visit', title: 'Cooling System Audit & Maintenance' },
-//     '2025-07-21': { type: 'ticket_raised', title: 'Application Performance Issue' },
+  // const calendarEvents = {
+  //   '2025-07-01': { type: 'ticket_raised', title: 'System Monitoring Alert - High CPU Usage' },
+  //   '2025-07-09': { type: 'site_visit', title: 'Hardware Maintenance - Storage Upgrade' },
+  //   '2025-07-10': { type: 'ticket_raised', title: 'API Service Down' },
+  //   '2025-07-11': { type: 'ticket_raised', title: 'Email Server Configuration Issue' },
+  //   '2025-07-12': { type: 'ticket_raised', title: 'Network Connectivity Issue - Branch Office' },
+  //   '2025-07-14': { type: 'site_visit', title: 'Firewall Update' },
+  //   '2025-07-15': { type: 'site_visit', title: 'System Upgrade Visit - OS Updates' },
+  //   '2025-07-16': { type: 'ticket_raised', title: 'Payment Gateway Error' },
+  //   '2025-07-17': { type: 'ticket_raised', title: 'User Access Permission Error' },
+  //   '2025-07-18': { type: 'ticket_raised', title: 'Software Crash - Inventory Module' },
+  //   '2025-07-19': { type: 'site_visit', title: 'Server Room Temperature Check' },
+  //   '2025-07-20': { type: 'site_visit', title: 'Cooling System Audit & Maintenance' },
+  //   '2025-07-21': { type: 'ticket_raised', title: 'Application Performance Issue' },
  
-//   };
+  // };
 
 //   const monthNames = [
 //     'January', 'February', 'March', 'April', 'May', 'June',
@@ -278,6 +278,8 @@
 
 // export default UserCalendar;
 
+
+
 import React, { useState, useEffect } from 'react';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -288,9 +290,9 @@ const monthNames = [
   'July', 'August', 'September', 'October', 'November', 'December'
 ];
 
-// helper to normalize date -> YYYY-MM-DD
+
 const formatDate = (d: Date) =>
-  `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 const UserCalendar = () => {
   const [viewMode, setViewMode] = useState('overview');

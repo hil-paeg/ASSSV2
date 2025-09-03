@@ -1,4 +1,4 @@
-
+// /app/api/auth/login/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';

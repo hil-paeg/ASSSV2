@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { UserPlus, Eye, EyeOff } from 'lucide-react';
+import { Dialog } from '../ui/dialog';
 
 interface CreateUserFormData {
   name: string;
@@ -227,7 +228,7 @@ const CreateUserForm: React.FC = () => {
                               type={showPassword ? 'text' : 'password'} 
                               placeholder="Enter temporary password" 
                               {...field} 
-                            />
+                            />             
                             <Button
                               type="button"
                               variant="ghost"

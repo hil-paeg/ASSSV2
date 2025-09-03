@@ -82,14 +82,24 @@ const CreateTicket: React.FC = () => {
         comments: JSON.stringify(timelineEvents),
       };
 
-      const response = await fetch('/api/tickets', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify(formData),
-      });
+      // const response = await fetch('/api/tickets', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      //   },
+      //   body: JSON.stringify(formData),
+      // });
+
+      const response = await fetch('/api/tickets?action=create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+          body: JSON.stringify(formData),
+        });
+
 
       if (!response.ok) {
         const errorData = await response.json();
