@@ -11,6 +11,7 @@ interface UserDetails {
   member_id?: number;
   phone_number?: string | null;
   client_username?: string;
+  client_name?:string;
 }
 
 const Header = () => {
@@ -111,14 +112,14 @@ const Header = () => {
                         )}
                         <div>
                           <span className="font-semibold">Client Username: </span>
-                          <span>{userDetails.client_username}</span>
+                          <span>{userDetails.client_name}</span>
                         </div>
                       </>
                     )}
                     {user.role === 'client' && (
                       <div>
                         <span className="font-semibold">Client Username: </span>
-                        <span>{userDetails.client_username}</span>
+                        <span>{userDetails.client_name}</span>
                       </div>
                     )}
                   </div>

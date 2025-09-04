@@ -302,23 +302,47 @@ const UserCalendar = () => {
   const [ticketRaisedDates, setTicketRaisedDates] = useState<string[]>([]);
 
   // Fetch data from API on component mount
+  // useEffect(() => {
+  //   async function getCalendarData() {
+  //     const res = await fetch('/api/calendar-data');
+  //     const data = await res.json();
+
+  //     if (data.siteVisits && data.tickets) {
+  //       setSiteVisitDates(
+  //         data.siteVisits.map((visit: any) => formatDate(new Date(visit.date)))
+  //       );
+  //       setTicketRaisedDates(
+  //         data.tickets.map((ticket: any) => formatDate(new Date(ticket.created_at)))
+  //       );
+  //     }
+  //   }
+
+  //   getCalendarData();
+  // }, []);
+
   useEffect(() => {
-    async function getCalendarData() {
-      const res = await fetch('/api/calendar-data');
-      const data = await res.json();
+  async function getCalendarData() {
+    const res = await fetch('/api/calendar-data', {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token')}`, // 👈 or from your AuthContext/Clerk/NextAuth
+      },
+    });
 
-      if (data.siteVisits && data.tickets) {
-        setSiteVisitDates(
-          data.siteVisits.map((visit: any) => formatDate(new Date(visit.date)))
-        );
-        setTicketRaisedDates(
-          data.tickets.map((ticket: any) => formatDate(new Date(ticket.created_at)))
-        );
-      }
+    const data = await res.json();
+
+    if (data.siteVisits && data.tickets) {
+      setSiteVisitDates(
+        data.siteVisits.map((visit: any) => formatDate(new Date(visit.date)))
+      );
+      setTicketRaisedDates(
+        data.tickets.map((ticket: any) => formatDate(new Date(ticket.created_at)))
+      );
     }
+  }
 
-    getCalendarData();
-  }, []);
+  getCalendarData();
+}, []);
+
 
   const getDaysInMonth = (month: number, year: number) => {
     const firstDay = new Date(year, month, 1);

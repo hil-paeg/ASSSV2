@@ -1,4 +1,3 @@
-// File: app/api/site-visits/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import jwt from 'jsonwebtoken';

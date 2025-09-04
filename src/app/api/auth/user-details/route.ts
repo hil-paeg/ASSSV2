@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
     if (decoded.role === 'client') {
       const client = await prisma.client.findUnique({
         where: { client_id: decoded.id },
-        select: { client_username: true },
+        select: { client_username: true , name : true },
       });
 
       if (!client) {
@@ -28,12 +28,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         username: client.client_username,
         client_username: client.client_username,
+        client_name : client.name
       });
     } else if (decoded.role === 'clientMember') {
       const member = await prisma.clientMember.findUnique({
         where: { member_id: decoded.id },
         include: {
-          client: { select: { client_username: true } },
+          client: { select: { client_username: true ,name : true } },
         },
       });
 
@@ -46,6 +47,7 @@ export async function GET(req: NextRequest) {
         member_id: member.member_id,
         phone_number: member.phone_number,
         client_username: member.client.client_username,
+        client_name: member.client.name,
       });
     }
 

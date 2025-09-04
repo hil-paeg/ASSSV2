@@ -1822,7 +1822,7 @@ export async function GET(req: NextRequest) {
         role: 'client' | 'clientMember' | 'admin';
         clientId?: number;
       };
-      console.log('Decoded JWT:', decoded);
+      // console.log('Decoded JWT:', decoded);
     } catch (jwtError) {
       console.error('JWT verification error:', jwtError);
       return NextResponse.json({ error: 'Unauthorized: Invalid JWT' }, { status: 401 });
@@ -1838,7 +1838,7 @@ export async function GET(req: NextRequest) {
         },
       });
     } else if (decoded.role === 'client') {
-      // console.log('Fetching tickets for client, client_id:', Number(decoded.id));
+      console.log('Fetching tickets for client, client_id:', Number(decoded.id));
       tickets = await prisma.ticket.findMany({
         where: { client_id: Number(decoded.id) },
         include: {
@@ -1847,7 +1847,7 @@ export async function GET(req: NextRequest) {
         },
       });
     } else if (decoded.role === 'clientMember') {
-      // console.log('Fetching tickets for clientMember, client_id:', Number(decoded.clientId));
+      console.log('Fetching tickets for clientMember, client_id:', Number(decoded.clientId));
       if (!decoded.clientId) {
         return NextResponse.json({ error: 'Invalid clientId for clientMember' }, { status: 400 });
       }
@@ -2063,8 +2063,8 @@ export async function PUT(req: NextRequest) {
       role: 'client' | 'clientMember' | 'admin';
       clientId?: number;
     };
-
-    // Parse request body
+    
+ 
     const { searchParams } = new URL(req.url);
     const ticketId = parseInt(searchParams.get('id') || '0', 10);
 
@@ -2074,13 +2074,13 @@ export async function PUT(req: NextRequest) {
 
     const { status, comments, ticket_type } = await req.json();
 
-    // Validate allowed status flow
+
     const ticket = await prisma.ticket.findUnique({ where: { ticket_id: ticketId } });
     if (!ticket) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
     }
 
-    // Enforce status transitions
+
     const allowedTransitions: Record<string, string[]> = {
       raised: ['confirmed by oem'],
       'confirmed by oem': ['resolved'],
@@ -2093,8 +2093,6 @@ export async function PUT(req: NextRequest) {
         { status: 400 }
       );
     }
-
-    // Prepare data for ContractualTicket update if ticket_type is provided
     let contractualUpdate = {};
     if (ticket_type && ticket_type !== ticket.ticket_type) {
       contractualUpdate = {
@@ -2106,9 +2104,8 @@ export async function PUT(req: NextRequest) {
       };
     }
 
-    // Start a transaction to update Ticket and ContractualTicket atomically
     const updatedTicket = await prisma.$transaction([
-      // Update the ticket
+
       prisma.ticket.update({
         where: { ticket_id: ticketId },
         data: {
@@ -2118,7 +2115,6 @@ export async function PUT(req: NextRequest) {
           updated_at: new Date(),
         },
       }),
-      // Update ContractualTicket if ticket_type is provided
       ...(Object.keys(contractualUpdate).length > 0
         ? [
             prisma.contractualTicket.updateMany({
