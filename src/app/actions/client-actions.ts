@@ -2,8 +2,9 @@
 'use server';
 
 import { prisma } from '@/lib/prisma';
-import { ClientFormData, MemberFormData, ContractFormData } from '@/types/client';
+import { ClientFormData, MemberFormData, ContractFormData, AdminFormData } from '@/types/client';
 
+// Fetch all clients for dropdown
 export async function getClients() {
   try {
     return await prisma.client.findMany({
@@ -14,7 +15,7 @@ export async function getClients() {
   }
 }
 
-
+// Suggest an unused client_id
 export async function suggestClientId() {
   try {
     const maxClient = await prisma.client.findFirst({
@@ -27,7 +28,7 @@ export async function suggestClientId() {
   }
 }
 
-
+// Fetch full client details for update/view
 export async function getClientDetails(client_id: number) {
   try {
     const client = await prisma.client.findUnique({
@@ -70,6 +71,8 @@ export async function getClientDetails(client_id: number) {
         ticket_typeRS3_2_used: client.contracts[0].ticket_typeRS3_2_used,
         site_visit_frequency: client.contracts[0].site_visit_frequency,
         site_visit_date: client.contracts[0].siteVisits[0]?.date.toISOString().split('T')[0] || '',
+        hil_admin_id: client.contracts[0].hil_admin_id,
+        hil_admin_team: client.contracts[0].hil_admin_team,
       } : null,
     };
   } catch (error) {
@@ -77,14 +80,16 @@ export async function getClientDetails(client_id: number) {
   }
 }
 
-
+// Create client and members
 export async function createClient(clientData: ClientFormData, members: MemberFormData[]) {
   try {
+    // Validate client_id uniqueness
     const existingClient = await prisma.client.findUnique({
       where: { client_id: clientData.client_id },
     });
     if (existingClient) throw new Error('Client ID already exists');
 
+    // Validate escalation_level uniqueness
     const escalationLevels = new Set(members.map((m) => m.escalation_level));
     if (escalationLevels.size !== members.length) {
       throw new Error('Duplicate escalation levels detected');
@@ -120,6 +125,7 @@ export async function createClient(clientData: ClientFormData, members: MemberFo
   }
 }
 
+// Update client
 export async function updateClient(clientData: ClientFormData) {
   try {
     await prisma.client.update({
@@ -136,10 +142,10 @@ export async function updateClient(clientData: ClientFormData) {
   }
 }
 
-// Create member
+// Create members (for update tab)
 export async function createMembers(client_id: number, members: MemberFormData[]) {
   try {
-    
+    // Validate escalation_level uniqueness
     const existingMembers = await prisma.clientMember.findMany({
       where: { client_id },
       select: { escalation_level: true },
@@ -175,6 +181,7 @@ export async function updateMember(member: MemberFormData) {
     if (!member.member_id) throw new Error('Member ID is required');
     if (!member.client_id) throw new Error('Client ID is required');
     
+    // Validate escalation_level uniqueness
     const existingMember = await prisma.clientMember.findFirst({
       where: {
         client_id: member.client_id,
@@ -238,6 +245,8 @@ export async function createOrUpdateContract(contractData: ContractFormData) {
         ticket_typeRS3_2: contractData.ticket_typeRS3_2,
         ticket_typeRS3_2_used: contractData.ticket_typeRS3_2_used,
         site_visit_frequency: contractData.site_visit_frequency,
+        hil_admin_id: contractData.hil_admin_id,
+        hil_admin_team: contractData.hil_admin_team,
         siteVisits: {
           deleteMany: {},
           create: siteVisitDates.map((date) => ({ date })),
@@ -256,6 +265,8 @@ export async function createOrUpdateContract(contractData: ContractFormData) {
         ticket_typeRS3_2: contractData.ticket_typeRS3_2,
         ticket_typeRS3_2_used: contractData.ticket_typeRS3_2_used,
         site_visit_frequency: contractData.site_visit_frequency,
+        hil_admin_id: contractData.hil_admin_id,
+        hil_admin_team: contractData.hil_admin_team,
         siteVisits: {
           create: siteVisitDates.map((date) => ({ date })),
         },
@@ -266,4 +277,44 @@ export async function createOrUpdateContract(contractData: ContractFormData) {
   }
 }
 
+// Update contract (alias for createOrUpdateContract)
 export const updateContract = createOrUpdateContract;
+
+// Fetch all admins for dropdown
+export async function getAdmins() {
+  try {
+    if (!prisma.admin) {
+      throw new Error('Prisma Admin model is not initialized');
+    }
+    return await prisma.admin.findMany({
+      select: { admin_id: true, name: true, designation: true, username: true },
+    });
+  } catch (error) {
+    throw new Error(`Failed to fetch admins: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+// Create admin
+export async function createAdmin(adminData: AdminFormData) {
+  try {
+    if (!prisma.admin) {
+      throw new Error('Prisma Admin model is not initialized');
+    }
+    // Validate username uniqueness
+    const existingAdmin = await prisma.admin.findUnique({
+      where: { username: adminData.username },
+    });
+    if (existingAdmin) throw new Error('Admin username already exists');
+
+    await prisma.admin.create({
+      data: {
+        name: adminData.name,
+        designation: adminData.designation,
+        username: adminData.username,
+        password: adminData.password,
+      },
+    });
+  } catch (error) {
+    throw new Error(`Failed to create admin: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}

@@ -122,6 +122,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
 model Client {
   client_id       Int       @id
   client_username String
@@ -153,6 +154,24 @@ model ClientMember {
   @@index([email])
 }
 
+// model ContractualTicket {
+//   client_id             Int     @id
+//   allowed_tickets       Int
+//   total_tickets_used    Int     @default(0)
+//   ticket_typeRS1        Int
+//   ticket_typeRS1_used   Int     @default(0)
+//   ticket_typeRS2        Int
+//   ticket_typeRS2_used   Int     @default(0)
+//   ticket_typeRS3_1      Int
+//   ticket_typeRS3_1_used Int     @default(0)
+//   ticket_typeRS3_2      Int
+//   ticket_typeRS3_2_used Int     @default(0)
+//   site_visit_frequency  Int
+//   siteVisits            SiteVisit[]   
+//   client                Client  @relation(fields: [client_id], references: [client_id])
+// }
+
+
 model ContractualTicket {
   client_id             Int     @id
   allowed_tickets       Int
@@ -166,10 +185,12 @@ model ContractualTicket {
   ticket_typeRS3_2      Int
   ticket_typeRS3_2_used Int     @default(0)
   site_visit_frequency  Int
+  hil_admin_id          Int?
+  hil_admin_team        Int[]
   siteVisits            SiteVisit[]   
   client                Client  @relation(fields: [client_id], references: [client_id])
+  hil_admin             Admin?  @relation(fields: [hil_admin_id], references: [admin_id])
 }
-
 model SiteVisit {
   id          Int      @id @default(autoincrement())
   client_id   Int
@@ -229,4 +250,14 @@ model Message {
 
   ticket      Ticket   @relation(fields: [ticket_id], references: [ticket_id])
   client      Client   @relation(fields: [client_id], references: [client_id])
+}
+
+model Admin {
+  admin_id    Int     @id @default(autoincrement())
+  name        String
+  designation String
+  username    String  @unique
+  password    String
+
+  allocatedContracts ContractualTicket[]
 }

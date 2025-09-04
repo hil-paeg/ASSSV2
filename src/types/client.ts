@@ -34,4 +34,14 @@ export interface ContractFormData {
   ticket_typeRS3_2_used: number;
   site_visit_frequency: number;
   site_visit_date: string;
+  hil_admin_id: number | null;
+  hil_admin_team: number[];
+}
+
+export interface AdminFormData {
+  admin_id?: number;
+  name: string;
+  designation: string;
+  username: string;
+  password: string;
 }

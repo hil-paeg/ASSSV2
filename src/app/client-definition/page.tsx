@@ -12,8 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertCircle, CheckCircle2, Edit, Trash2, Plus, Save } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { ClientFormData, MemberFormData, ContractFormData } from '@/types/client';
-import { getClients, createClient, updateClient, createMembers, updateMember, deleteMember, getClientDetails, createOrUpdateContract, updateContract, suggestClientId  } from '../actions/client-actions';
+
+// import { getClients, suggestClientId, createClient, updateClient, createMembers, updateMember, deleteMember, getClientDetails, createOrUpdateContract, updateContract, getAdmins, createAdmin } from '@/actions/client-actions';
+import { ClientFormData, MemberFormData, ContractFormData, AdminFormData } from '@/types/client';
+import { getClients , suggestClientId, createClient, updateClient, createMembers, updateMember, deleteMember, getClientDetails, createOrUpdateContract, updateContract, getAdmins, createAdmin } from '../actions/client-actions';
 export default function ClientDefinitionPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -54,6 +56,15 @@ export default function ClientDefinitionPage() {
     ticket_typeRS3_2_used: 0,
     site_visit_frequency: 0,
     site_visit_date: '',
+    hil_admin_id: null,
+    hil_admin_team: [],
+  });
+  const [admins, setAdmins] = useState<{ admin_id: number; name: string; designation: string; username: string }[]>([]);
+  const [newAdmin, setNewAdmin] = useState<AdminFormData>({
+    name: '',
+    designation: '',
+    username: '',
+    password: '',
   });
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -61,28 +72,30 @@ export default function ClientDefinitionPage() {
   const [editingMember, setEditingMember] = useState<MemberFormData | null>(null);
 
   useEffect(() => {
-    fetchClients();
-    fetchSuggestedClientId();
-  }, []);
-
-  const fetchClients = async () => {
-    try {
-      const data = await getClients();
-      setClients(data);
-    } catch (error) {
+    console.log('useEffect: Fetching initial data');
+    getClients().then((clients) => {
+      console.log('getClients Success:', clients);
+      setClients(clients);
+    }).catch((error) => {
+      console.error('getClients Error:', error);
       toast({ title: "Error", description: "Failed to fetch clients", variant: "destructive" });
-    }
-  };
-
-  const fetchSuggestedClientId = async () => {
-    try {
-      const id = await suggestClientId();
+    });
+    suggestClientId().then((id) => {
+      console.log('suggestClientId Success:', id);
       setSuggestedClientId(id);
       setClientData((prev) => ({ ...prev, client_id: id }));
-    } catch (error) {
+    }).catch((error) => {
+      console.error('suggestClientId Error:', error);
       toast({ title: "Error", description: "Failed to suggest client ID", variant: "destructive" });
-    }
-  };
+    });
+    getAdmins().then((admins) => {
+      console.log('getAdmins Success:', admins);
+      setAdmins(admins);
+    }).catch((error) => {
+      console.error('getAdmins Error:', error);
+      toast({ title: "Error", description: "Failed to fetch admins", variant: "destructive" });
+    });
+  }, []);
 
   const fetchClientDetails = async (id: number) => {
     setLoading(true);
@@ -110,12 +123,47 @@ export default function ClientDefinitionPage() {
         ticket_typeRS3_2_used: 0,
         site_visit_frequency: 0,
         site_visit_date: '',
+        hil_admin_id: null,
+        hil_admin_team: [],
       });
     } catch (error) {
+      console.error('fetchClientDetails Error:', error);
       toast({ title: "Error", description: "Failed to fetch client details", variant: "destructive" });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCreateAdmin = async () => {
+    try {
+      await createAdmin(newAdmin);
+      toast({ title: "Success", description: "Admin created." });
+      setNewAdmin({
+        name: '',
+        designation: '',
+        username: '',
+        password: '',
+      });
+      const admins = await getAdmins();
+      setAdmins(admins);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to create admin.";
+      console.error('Create Admin Error:', err);
+      toast({ title: "Error", description: message, variant: "destructive" });
+    }
+  };
+
+  const handleNewAdminChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setNewAdmin((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleHilAdminChange = (value: string) => {
+    setContractData((prev) => ({ ...prev, hil_admin_id: value === 'none' ? null : parseInt(value) }));
+  };
+
+  const handleHilAdminTeamChange = (selected: { value: number; label: string }[]) => {
+    setContractData((prev) => ({ ...prev, hil_admin_team: selected.map((opt) => opt.value) }));
   };
 
   const handleClientChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -195,6 +243,7 @@ export default function ClientDefinitionPage() {
       }
       setMembers((prev) => prev.filter((_, i) => i !== index));
     } catch (error) {
+      console.error('removeMember Error:', error);
       toast({ title: "Error", description: "Failed to delete member", variant: "destructive" });
     }
   };
@@ -210,9 +259,13 @@ export default function ClientDefinitionPage() {
       setContractData((prev) => ({ ...prev, client_id: newClientId }));
       setStep(2);
       toast({ title: "Success", description: "Client and members created." });
-      fetchSuggestedClientId();
+      suggestClientId().then((id) => {
+        setSuggestedClientId(id);
+        setClientData((prev) => ({ ...prev, client_id: id }));
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to create client.";
+      console.error('handleCreateStep1 Error:', err);
       toast({ title: "Error", description: message, variant: "destructive" });
     }
   };
@@ -245,17 +298,22 @@ export default function ClientDefinitionPage() {
         ticket_typeRS3_2_used: 0,
         site_visit_frequency: 0,
         site_visit_date: '',
+        hil_admin_id: null,
+        hil_admin_team: [],
       });
-      fetchClients();
-      fetchSuggestedClientId();
+      getClients().then(setClients);
+      suggestClientId().then((id) => {
+        setSuggestedClientId(id);
+        setClientData((prev) => ({ ...prev, client_id: id }));
+      });
     } catch (err) {
+      console.error('handleCreateStep2 Error:', err);
       toast({ title: "Error", description: "Failed to create contract.", variant: "destructive" });
     }
   };
 
   const handleUpdate = async () => {
     try {
-      // Validate escalation_level uniqueness
       const escalationLevels = new Set(members.map((m) => m.escalation_level));
       if (escalationLevels.size !== members.length) {
         toast({ title: "Error", description: "Duplicate escalation levels detected.", variant: "destructive" });
@@ -273,6 +331,7 @@ export default function ClientDefinitionPage() {
       fetchClientDetails(selectedClientId!);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update client.";
+      console.error('handleUpdate Error:', err);
       toast({ title: "Error", description: message, variant: "destructive" });
     }
   };
@@ -290,6 +349,7 @@ export default function ClientDefinitionPage() {
         <TabsList className="border-b">
           <TabsTrigger value="creation" className="px-6 py-2">Creation</TabsTrigger>
           <TabsTrigger value="update" className="px-6 py-2">Update/View</TabsTrigger>
+          <TabsTrigger value="admin" className="px-6 py-2">Admin Creation</TabsTrigger>
         </TabsList>
         <TabsContent value="creation" className="space-y-6">
           {step === 1 ? (
@@ -471,6 +531,35 @@ export default function ClientDefinitionPage() {
                   <div>
                     <Label htmlFor="site_visit_date">First Site Visit Date</Label>
                     <Input id="site_visit_date" name="site_visit_date" type="date" value={contractData.site_visit_date} onChange={handleContractChange} />
+                  </div>
+                  <div>
+                    <Label htmlFor="hil_admin_id">Allocate HIL Admin</Label>
+                    <Select onValueChange={handleHilAdminChange} value={contractData.hil_admin_id?.toString() || 'none'}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Admin" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {admins.map((admin) => (
+                          <SelectItem key={admin.admin_id} value={admin.admin_id.toString()}>
+                            {admin.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="hil_admin_team">HIL Admin Team</Label>
+                    <Select
+                      isMulti
+                      options={admins.map((admin) => ({ value: admin.admin_id, label: admin.name }))}
+                      value={contractData.hil_admin_team.map((id) => ({
+                        value: id,
+                        label: admins.find((a) => a.admin_id === id)?.name || '',
+                      }))}
+                      onChange={handleHilAdminTeamChange}
+                      placeholder="Select Admins"
+                    />
                   </div>
                 </div>
                 <div className="flex gap-4">
@@ -707,11 +796,96 @@ export default function ClientDefinitionPage() {
                       <Label htmlFor="site_visit_date">First Site Visit Date</Label>
                       <Input id="site_visit_date" name="site_visit_date" type="date" value={contractData.site_visit_date} onChange={handleContractChange} disabled={!isEditing} />
                     </div>
+                    <div>
+                      <Label htmlFor="hil_admin_id">Allocate HIL Admin</Label>
+                      <Select onValueChange={handleHilAdminChange} value={contractData.hil_admin_id?.toString() || 'none'} disabled={!isEditing}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select Admin" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          {admins.map((admin) => (
+                            <SelectItem key={admin.admin_id} value={admin.admin_id.toString()}>
+                              {admin.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="hil_admin_team">HIL Admin Team</Label>
+                      <Select
+                        isMulti
+                        options={admins.map((admin) => ({ value: admin.admin_id, label: admin.name }))}
+                        value={contractData.hil_admin_team.map((id) => ({
+                          value: id,
+                          label: admins.find((a) => a.admin_id === id)?.name || '',
+                        }))}
+                        onChange={handleHilAdminTeamChange}
+                        placeholder="Select Admins"
+                        isDisabled={!isEditing}
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             </>
           )}
+        </TabsContent>
+        <TabsContent value="admin" className="space-y-6">
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-xl">Create Admin</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="name">Name</Label>
+                  <Input id="name" name="name" value={newAdmin.name} onChange={handleNewAdminChange} />
+                </div>
+                <div>
+                  <Label htmlFor="designation">Designation</Label>
+                  <Input id="designation" name="designation" value={newAdmin.designation} onChange={handleNewAdminChange} />
+                </div>
+                <div>
+                  <Label htmlFor="username">Username</Label>
+                  <Input id="username" name="username" value={newAdmin.username} onChange={handleNewAdminChange} />
+                </div>
+                <div>
+                  <Label htmlFor="password">Password</Label>
+                  <Input id="password" name="password" type="password" value={newAdmin.password} onChange={handleNewAdminChange} />
+                </div>
+              </div>
+              <Button onClick={handleCreateAdmin} className="bg-green-600 hover:bg-green-700">
+                <Save className="mr-2 h-4 w-4" /> Create Admin
+              </Button>
+            </CardContent>
+          </Card>
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-xl">Existing Admins</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Designation</TableHead>
+                    <TableHead>Username</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {admins.map((admin) => (
+                    <TableRow key={admin.admin_id}>
+                      <TableCell>{admin.name}</TableCell>
+                      <TableCell>{admin.designation}</TableCell>
+                      <TableCell>{admin.username}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
