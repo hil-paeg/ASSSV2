@@ -107,7 +107,7 @@ const CreateTicket: React.FC = () => {
       }
 
       const newTicket = await response.json();
-      setTicketNumber(`TICKET-${newTicket.ticket_id}`);  // Use real ticket_id from DB
+      setTicketNumber(`TICKET-${newTicket.ticket_id}`);  
       setShowSuccessDialog(true);
       toast({ title: 'Success', description: 'Ticket created successfully!' });
     } catch (error: any) {

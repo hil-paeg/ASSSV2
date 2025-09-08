@@ -666,7 +666,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line, Area } from 'recharts';
 import { Clock, Star, TicketIcon, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -1012,29 +1012,74 @@ const AdminAnalytics: React.FC = () => {
             )}
           </CardContent>
         </Card>
-
+        
         <Card className="bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
-          <CardHeader>
-            <CardTitle className="text-blue-900">Time Saved by Client</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {timeSavedByClientData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={timeSavedByClientData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="client" angle={0} textAnchor="middle" height={80} tick={{ fill: '#1E3A8A', fontSize: 12 }} />
-                  <YAxis label={{ value: 'Hours', angle: -90, position: 'insideLeft', fill: '#1E3A8A' }} tick={{ fill: '#1E3A8A' }} />
-                  <Tooltip contentStyle={{ backgroundColor: '#F9FAFB', borderColor: '#E5E7EB', color: '#1E3A8A' }} />
-                  <Bar dataKey="hours" fill="#3B82F6" name="Time Saved" />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="text-center text-blue-600 py-8">
-                <p>No time-saving data available.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+  <CardHeader>
+    <CardTitle className="text-blue-900">Time Saved by Client</CardTitle>
+  </CardHeader>
+  <CardContent>
+    {timeSavedByClientData.length > 0 ? (
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart data={timeSavedByClientData}>
+          <defs>
+            <linearGradient id="pinkGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#ec4899" stopOpacity={0.8} />
+              <stop offset="100%" stopColor="#f9a8d4" stopOpacity={0.1} />
+            </linearGradient>
+          </defs>
+
+          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+          <XAxis
+            dataKey="client"
+            angle={0}
+            textAnchor="middle"
+            height={80}
+            tick={{ fill: '#1E3A8A', fontSize: 12 }}
+          />
+          <YAxis
+            label={{
+              value: 'Hours',
+              angle: -90,
+              position: 'insideLeft',
+              fill: '#1E3A8A',
+            }}
+            tick={{ fill: '#1E3A8A' }}
+          />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: '#F9FAFB',
+              borderColor: '#E5E7EB',
+              color: '#1E3A8A',
+            }}
+          />
+
+          {/* Highlighted area under the line */}
+          <Area
+            type="monotone"
+            dataKey="hours"
+            stroke="none"
+            fill="url(#pinkGradient)"
+          />
+
+          {/* Line with dots */}
+          <Line
+            type="monotone"
+            dataKey="hours"
+            stroke="url(#pinkGradient)"
+            strokeWidth={3}
+            dot={{ r: 5, stroke: '#ec4899', strokeWidth: 2, fill: '#fff' }}
+            activeDot={{ r: 7, fill: '#ec4899' }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    ) : (
+      <div className="text-center text-blue-600 py-8">
+        <p>No time-saving data available.</p>
+      </div>
+    )}
+  </CardContent>
+</Card>
+
 
         <Card className="bg-white shadow-md hover:shadow-lg transition-shadow duration-300">
           <CardHeader>

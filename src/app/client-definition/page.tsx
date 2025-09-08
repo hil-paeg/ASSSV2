@@ -16,6 +16,7 @@ import { useToast } from '@/components/ui/use-toast';
 // import { getClients, suggestClientId, createClient, updateClient, createMembers, updateMember, deleteMember, getClientDetails, createOrUpdateContract, updateContract, getAdmins, createAdmin } from '@/actions/client-actions';
 import { ClientFormData, MemberFormData, ContractFormData, AdminFormData } from '@/types/client';
 import { getClients , suggestClientId, createClient, updateClient, createMembers, updateMember, deleteMember, getClientDetails, createOrUpdateContract, updateContract, getAdmins, createAdmin } from '../actions/client-actions';
+import MainLayout from '@/components/Layout/MainLayout';
 export default function ClientDefinitionPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -343,6 +344,7 @@ export default function ClientDefinitionPage() {
   };
 
   return (
+    <MainLayout>
     <div className="container mx-auto p-6 bg-gray-50 min-h-screen">
       <h1 className="text-3xl font-bold mb-6 text-gray-900">Client Definition</h1>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -889,5 +891,6 @@ export default function ClientDefinitionPage() {
         </TabsContent>
       </Tabs>
     </div>
+    </MainLayout>
   );
 }

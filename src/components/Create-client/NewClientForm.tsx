@@ -3,6 +3,7 @@
 
 import { useState, useMemo } from 'react'
 import { useFormStatus } from 'react-dom'
+import MainLayout from '../Layout/MainLayout'
 
 type Member = {
   member_name: string
@@ -60,6 +61,7 @@ export default function NewClientForm({
   const usedLevels = new Set(members.map(m => Number(m.escalation_level)))
 
   return (
+    <MainLayout>
     <form action={action} className="space-y-8">
       {/* Client fields */}
       <div className="rounded-2xl border p-5 shadow-sm">
@@ -207,5 +209,6 @@ export default function NewClientForm({
         <SubmitButton />
       </div>
     </form>
+    </MainLayout>
   )
 }
