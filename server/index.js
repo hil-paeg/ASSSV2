@@ -194,20 +194,20 @@ app.post('/api/auth/register', (req, res) => {
 });
 
 // Login endpoint
-app.post('/api/auth/login', (req, res) => {
-  const { email, password, role } = req.body || {};
+// app.post('/api/auth/login', (req, res) => {
+//   const { email, password, role } = req.body || {};
   
-  if (!email || !password || !role) {
-    return res.status(400).json({ error: 'Missing required fields' });
-  }
+//   if (!email || !password || !role) {
+//     return res.status(400).json({ error: 'Missing required fields' });
+//   }
 
-  const user = Array.from(users.values()).find(u => u.email === email && u.role === role);
-  if (!user) {
-    return res.status(401).json({ error: 'Invalid credentials' });
-  }
+//   const user = Array.from(users.values()).find(u => u.email === email && u.role === role);
+//   if (!user) {
+//     return res.status(401).json({ error: 'Invalid credentials' });
+//   }
 
-  res.json(user);
-});
+//   res.json(user);
+// });
 
 app.get('/api/chats/:id/messages', (req, res) => {
   const chatId = req.params.id;

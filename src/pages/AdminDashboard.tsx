@@ -2704,14 +2704,14 @@ const AdminDashboard: React.FC = () => {
       if (!user?.id) {
         setError('Not authenticated. Please log in as an admin.');
         setLoading(false);
-        router.push('/login');
+        router.push('/');
         return;
       }
 
       if (user.role !== 'admin') {
         setError('Unauthorized: Admin access required.');
         setLoading(false);
-        router.push('/login');
+        router.push('/');
         return;
       }
 
@@ -2729,7 +2729,7 @@ const AdminDashboard: React.FC = () => {
           if (errorData.error.includes('Token expired') || errorData.error.includes('Invalid token')) {
             setError('Session expired. Please log in again.');
             logout();
-            router.push('/login');
+            router.push('/');
             return;
           }
           throw new Error(`Clients fetch failed: ${errorData.error}`);
@@ -2881,7 +2881,7 @@ const AdminDashboard: React.FC = () => {
           <div className="p-4 text-red-600 bg-red-50 border border-red-200 rounded-lg">
             {error}
             {error.includes('Session expired') && (
-              <Button className="mt-2" onClick={() => router.push('/login')}>
+              <Button className="mt-2" onClick={() => router.push('/')}>
                 Log In Again
               </Button>
             )}

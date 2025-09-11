@@ -2156,28 +2156,31 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// Function to send email notification
-async function sendTicketCreationEmail({
+// Function to send email notification for different actions
+async function sendTicketActionEmail({
   clientUsername,
   issueTitle,
   ticketNumber,
+  actionLabel,
 }: {
   clientUsername: string;
   issueTitle: string;
   ticketNumber: string;
+  actionLabel: 'creation' | 'status update' | 'closed';
 }) {
   try {
     await transporter.sendMail({
       from: `"Support System" <${process.env.EMAIL_USER}>`,
       to: 'vedupadhye10@gmail.com',
-      subject: `New Ticket Created: ${issueTitle}`,
+      subject: `Ticket ${actionLabel.toUpperCase()}: ${issueTitle}`,
       html: `
-        <h3>New Ticket Notification</h3>
-        <p>A new ticket has been created with the following details:</p>
+        <h3>Ticket Notification</h3>
+        <p>An action was performed on a ticket:</p>
         <ul>
           <li><strong>Ticket Number:</strong> ${ticketNumber}</li>
           <li><strong>Title:</strong> ${issueTitle}</li>
           <li><strong>Created By:</strong> ${clientUsername}</li>
+          <li><strong>Action:</strong> ${actionLabel}</li>
         </ul>
         <p>Please review the ticket in the support system.</p>
       `,
@@ -2311,11 +2314,12 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Send email notification to admin
-      await sendTicketCreationEmail({
+      // Send email notification (creation)
+      await sendTicketActionEmail({
         clientUsername: newTicket.client.client_username,
         issueTitle: newTicket.issue_title,
         ticketNumber: `TICKET-${newTicket.ticket_id}`,
+        actionLabel: 'creation',
       });
 
       return NextResponse.json(newTicket, { status: 201 });
@@ -2364,6 +2368,18 @@ export async function POST(req: NextRequest) {
           },
         });
 
+        // Notify via email (closed by admin)
+        const clientForMail = await prisma.client.findUnique({
+          where: { client_id: ticket.client_id },
+          select: { client_username: true },
+        });
+        await sendTicketActionEmail({
+          clientUsername: clientForMail?.client_username || 'Unknown',
+          issueTitle: updatedTicket.issue_title,
+          ticketNumber: `TICKET-${updatedTicket.ticket_id}`,
+          actionLabel: 'closed',
+        });
+
         await prisma.closeTicket.upsert({
           where: { ticket_id: ticketId },
           update: {
@@ -2397,6 +2413,18 @@ export async function POST(req: NextRequest) {
               updated_at: new Date(),
               closed_at: ticket.adminClosed ? new Date() : ticket.closed_at,
             },
+          });
+
+          // Notify via email (closed by client)
+          const clientForMail = await prisma.client.findUnique({
+            where: { client_id: ticket.client_id },
+            select: { client_username: true },
+          });
+          await sendTicketActionEmail({
+            clientUsername: clientForMail?.client_username || 'Unknown',
+            issueTitle: updatedTicket.issue_title,
+            ticketNumber: `TICKET-${updatedTicket.ticket_id}`,
+            actionLabel: 'closed',
           });
 
           await prisma.closeTicket.upsert({
@@ -2507,6 +2535,18 @@ export async function PUT(req: NextRequest) {
           ]
         : []),
     ]);
+
+    // Notify via email (status update)
+    const clientForMail = await prisma.client.findUnique({
+      where: { client_id: ticket.client_id },
+      select: { client_username: true },
+    });
+    await sendTicketActionEmail({
+      clientUsername: clientForMail?.client_username || 'Unknown',
+      issueTitle: updatedTicket[0].issue_title,
+      ticketNumber: `TICKET-${updatedTicket[0].ticket_id}`,
+      actionLabel: 'status update',
+    });
 
     return NextResponse.json(updatedTicket[0], { status: 200 });
   } catch (error: any) {

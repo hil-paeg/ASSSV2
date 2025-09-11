@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { LogOut, User, Bell } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-
+import Image from 'next/image';
 interface UserDetails {
   username: string;
   member_id?: number;
@@ -55,7 +55,9 @@ const Header = () => {
         <div className="flex justify-between items-center h-16 px-4">
           {/* Logo and Title */}
           <div className="flex items-center space-x-3">
-            <div className="text-red-500 font-bold text-xl">Company Logo</div>
+            <div className="text-red-500 font-bold text-xl">
+             <Image src="/hil.jpg" alt="Description of image" width={170} height={90} />
+            </div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
               ASSS Portal
             </h1>

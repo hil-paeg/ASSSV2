@@ -113,6 +113,24 @@
 // }
 
 
+
+// model ContractualTicket {
+//   client_id             Int     @id
+//   allowed_tickets       Int
+//   total_tickets_used    Int     @default(0)
+//   ticket_typeRS1        Int
+//   ticket_typeRS1_used   Int     @default(0)
+//   ticket_typeRS2        Int
+//   ticket_typeRS2_used   Int     @default(0)
+//   ticket_typeRS3_1      Int
+//   ticket_typeRS3_1_used Int     @default(0)
+//   ticket_typeRS3_2      Int
+//   ticket_typeRS3_2_used Int     @default(0)
+//   site_visit_frequency  Int
+//   siteVisits            SiteVisit[]   
+//   client                Client  @relation(fields: [client_id], references: [client_id])
+// }
+
 generator client {
   provider = "prisma-client-js"
   output   = "../generated/prisma"
@@ -155,24 +173,6 @@ model ClientMember {
   @@unique([client_id, escalation_level])
   @@index([email])
 }
-
-// model ContractualTicket {
-//   client_id             Int     @id
-//   allowed_tickets       Int
-//   total_tickets_used    Int     @default(0)
-//   ticket_typeRS1        Int
-//   ticket_typeRS1_used   Int     @default(0)
-//   ticket_typeRS2        Int
-//   ticket_typeRS2_used   Int     @default(0)
-//   ticket_typeRS3_1      Int
-//   ticket_typeRS3_1_used Int     @default(0)
-//   ticket_typeRS3_2      Int
-//   ticket_typeRS3_2_used Int     @default(0)
-//   site_visit_frequency  Int
-//   siteVisits            SiteVisit[]   
-//   client                Client  @relation(fields: [client_id], references: [client_id])
-// }
-
 
 model ContractualTicket {
   client_id             Int     @id
