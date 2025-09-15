@@ -1,139 +1,7 @@
-// generator client {
-//   provider = "prisma-client-js"
-// }
-
-// datasource db {
-//   provider = "postgresql"
-//   url      = env("DATABASE_URL")
-// }
-
-// model Client {
-//   client_id       Int       @id
-//   client_username String
-//   client_password String
-//   name            String
-//   start_date      DateTime
-//   payment_cycle   String?   // Monthly, Quarterly, Yearly
-
-//   members   ClientMember[]
-//   tickets   Ticket[]
-//   contracts ContractualTicket[]
-//   messages  Message[]
-// }
-
-// model ClientMember {
-//   member_id        Int        @id @default(autoincrement())
-//   client_id        Int
-//   member_name      String
-//   designation      String
-//   email            String
-//   phone_number     String?
-//   escalation_level Int
-//   member_username  String
-//   member_password  String
-
-//   client           Client     @relation(fields: [client_id], references: [client_id])
-
-//   @@unique([client_id, escalation_level])
-//   @@index([email])
-// }
-
-// model ContractualTicket {
-//   client_id             Int     @id
-//   allowed_tickets       Int
-//   total_tickets_used    Int     @default(0)
-//   ticket_typeRS1        Int
-//   ticket_typeRS1_used   Int     @default(0)
-//   ticket_typeRS2        Int
-//   ticket_typeRS2_used   Int     @default(0)
-//   ticket_typeRS3_1      Int
-//   ticket_typeRS3_1_used Int     @default(0)
-//   ticket_typeRS3_2      Int
-//   ticket_typeRS3_2_used Int     @default(0)
-//   site_visit_frequency  Int
-//   siteVisits            SiteVisit[]   // ✅ new relation
-//   client                Client  @relation(fields: [client_id], references: [client_id])
-// }
-
-// model SiteVisit {
-//   id          Int      @id @default(autoincrement())
-//   client_id   Int
-//   date        DateTime
-//   contract    ContractualTicket @relation(fields: [client_id], references: [client_id])
-// }
-
-// model Ticket {
-//   ticket_id         Int        @id @default(autoincrement())
-//   client_id         Int
-//   issue_title       String
-//   priority          String?
-//   description       String?
-//   location          String?
-//   actions_performed String?
-//   attachments       String?
-//   creator_name      String?
-//   status            String     @default("open")
-//   comments          String?
-//   ticket_type       String?
-//   created_at        DateTime   @default(now())
-//   updated_at        DateTime   @updatedAt
-//   closed_at         DateTime?
-//   summary           String?
-//   out_of_scope      Boolean    @default(false)
-
-//   client            Client     @relation(fields: [client_id], references: [client_id])
-//   close_ticket      CloseTicket?
-//   messages          Message[]
-// }
-
-// model CloseTicket {
-//   close_id    Int      @id @default(autoincrement())
-//   ticket_id   Int      @unique
-//   summary     String?
-//   attachment  String?
-//   out_of_scope Boolean @default(false)
-//   experience  String?
-//   time_saved  Int?
-//   rating      Int?
-//   created_at  DateTime @default(now())
-//   ticket      Ticket   @relation(fields: [ticket_id], references: [ticket_id])
-// }
-
-// model Message {
-//   msg_id      Int      @id @default(autoincrement())
-//   ticket_id   Int
-//   client_id   Int
-//   sender_role String
-//   msg_text    String
-//   attachment  String?
-//   created_at  DateTime @default(now())
-
-//   ticket      Ticket   @relation(fields: [ticket_id], references: [ticket_id])
-//   client      Client   @relation(fields: [client_id], references: [client_id])
-// }
-
-
-
-// model ContractualTicket {
-//   client_id             Int     @id
-//   allowed_tickets       Int
-//   total_tickets_used    Int     @default(0)
-//   ticket_typeRS1        Int
-//   ticket_typeRS1_used   Int     @default(0)
-//   ticket_typeRS2        Int
-//   ticket_typeRS2_used   Int     @default(0)
-//   ticket_typeRS3_1      Int
-//   ticket_typeRS3_1_used Int     @default(0)
-//   ticket_typeRS3_2      Int
-//   ticket_typeRS3_2_used Int     @default(0)
-//   site_visit_frequency  Int
-//   siteVisits            SiteVisit[]   
-//   client                Client  @relation(fields: [client_id], references: [client_id])
-// }
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
+  // output   = "../generated/prisma"
 }
 
 
@@ -141,16 +9,17 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
-
 model Client {
-  client_id       Int       @id
+  client_id       String       @id
   client_username String
   client_password String
   name            String
   start_date      DateTime
   payment_cycle   String?   // Monthly, Quarterly, Yearly
-
+  email           String?
+  resetToken      String?   // Add this field for password reset functionality
+  resetTokenExpiry DateTime? // Optional: Add expiry for reset tokens
+  
   members   ClientMember[]
   tickets   Ticket[]
   contracts ContractualTicket[]
@@ -159,7 +28,7 @@ model Client {
 
 model ClientMember {
   member_id        Int        @id @default(autoincrement())
-  client_id        Int
+  client_id        String
   member_name      String
   designation      String
   email            String
@@ -175,7 +44,7 @@ model ClientMember {
 }
 
 model ContractualTicket {
-  client_id             Int     @id
+  client_id             String     @id
   allowed_tickets       Int
   total_tickets_used    Int     @default(0)
   ticket_typeRS1        Int
@@ -195,15 +64,17 @@ model ContractualTicket {
 }
 model SiteVisit {
   id          Int      @id @default(autoincrement())
-  client_id   Int
+  client_id   String
   date        DateTime
   contract    ContractualTicket @relation(fields: [client_id], references: [client_id])
 }
 
 model Ticket {
   ticket_id         Int        @id @default(autoincrement())
-  client_id         Int
+  client_id         String
   issue_title       String
+  issue_category    String?    
+  issue_subcategory String?    
   priority          String?
   description       String?
   location          String?
@@ -244,7 +115,7 @@ model CloseTicket {
 model Message {
   msg_id      Int      @id @default(autoincrement())
   ticket_id   Int
-  client_id   Int
+  client_id   String
   sender_role String
   msg_text    String
   attachment  String?
@@ -260,6 +131,35 @@ model Admin {
   designation String
   username    String  @unique
   password    String
-
+  email       String?
   allocatedContracts ContractualTicket[]
 }
+
+model OtpRecord {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  role      String   
+  otp       String
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

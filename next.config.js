@@ -7,13 +7,28 @@ const nextConfig = {
 	},
 	async rewrites() {
 		return [
-			{
-				source: '/api/:path*',
-				destination: 'http://localhost:3001/api/:path*',
-			},
+			// Rewrite socket.io first
 			{
 				source: '/socket.io/:path*',
 				destination: 'http://localhost:3001/socket.io/:path*',
+			},
+			// Don't rewrite auth routes - must come before the generic /api/:path* rule
+			{
+				source: '/api/auth/:path*',
+				destination: '/api/auth/:path*',
+			},
+			// Rewrite other API routes to the external API
+			{
+				source: '/api/:path*',
+				destination: 'http://localhost:3001/api/:path*',
+				// Add a has condition to exclude auth routes that might have slipped through
+				has: [
+					{
+						type: 'header',
+						key: 'x-middleware-rewrite',
+						value: '^(?!.*/api/auth/).*$'
+					}
+				]
 			},
 		];
 	},

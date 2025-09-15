@@ -68,14 +68,10 @@
 
 
 'use server';
-
-import { prisma } from '@/lib/prisma';
+import prisma from "@/lib/prisma"; // 👈 default import of prisma client
 
 export async function getContractualTicket(clientId: number) {
   try {
-    if (!prisma.contractualTicket) {
-      throw new Error('Prisma ContractualTicket model is not initialized');
-    }
     const contract = await prisma.contractualTicket.findUnique({
       where: { client_id: clientId },
     });
@@ -88,9 +84,6 @@ export async function getContractualTicket(clientId: number) {
 
 export async function getClientContractInfo(clientId: number) {
   try {
-    if (!prisma.client || !prisma.contractualTicket) {
-      throw new Error('Prisma Client or ContractualTicket model is not initialized');
-    }
     const client = await prisma.client.findUnique({
       where: { client_id: clientId },
       include: {
@@ -154,15 +147,13 @@ export async function getClientContractInfo(clientId: number) {
 
 export async function getTicketStats(clientId: number) {
   try {
-    if (!prisma.ticket) {
-      throw new Error('Prisma Ticket model is not initialized');
-    }
     const tickets = await prisma.ticket.findMany({
       where: {
         client_id: clientId,
         status: { not: 'closed' },
       },
     });
+
     const pendingTickets = tickets.length;
     const highPriorityTickets = tickets.filter((t) => t.priority === 'High').length;
 

@@ -13,7 +13,8 @@ import {
   BarChart3, 
   MessageSquare,
   BarChart,
-  ChartAreaIcon
+  ChartAreaIcon,
+  User
 } from 'lucide-react';
 
 import type { LucideIcon } from 'lucide-react';
@@ -38,6 +39,7 @@ const Sidebar: React.FC = () => {
     { name: 'Analytics', href: '/client-analytics', icon: BarChart },
     { name: 'Messages', href: '/chat', icon: MessageSquare },
     { name: 'Knowledge Hub', href: '/knowledge', icon: FolderOpen },
+     { name: 'Accounts', href: '/accounts', icon: User },
   ];
 
   const adminNavItems: NavItem[] = [
@@ -48,7 +50,8 @@ const Sidebar: React.FC = () => {
     { name: 'Reports', href: '/reports', icon: ChartAreaIcon },
     { name: 'Client Control', href: '/clientcontrol', icon: Users },
     { name: 'Knowledge Hub', href: '/knowledge', icon: FolderOpen },
-    {name: 'Client Definition',href :'/client-definition', icon: Plus}
+    {name: 'Client Definition',href :'/client-definition', icon: Plus},
+    { name: 'Accounts', href: '/accounts', icon: User },
     // { name: 'Create Client', href: '/create-client', icon: Plus },
     //  { name: 'client contract', href: '/client-contract', icon: Plus },
   ];
