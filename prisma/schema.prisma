@@ -58,6 +58,7 @@ model ContractualTicket {
   site_visit_frequency  Int
   hil_admin_id          Int?
   hil_admin_team        Int[]
+  escalation_matrix     Int[]   
   siteVisits            SiteVisit[]   
   client                Client  @relation(fields: [client_id], references: [client_id])
   hil_admin             Admin?  @relation(fields: [hil_admin_id], references: [admin_id])
@@ -82,6 +83,7 @@ model Ticket {
   attachments       String?
   creator_name      String?
   status            String     @default("open")
+  timeline          Json?      @default("[]")
   comments          String?
   ticket_type       String?
   created_at        DateTime   @default(now())
@@ -132,6 +134,7 @@ model Admin {
   username    String  @unique
   password    String
   email       String?
+  mobile_number String?
   allocatedContracts ContractualTicket[]
 }
 

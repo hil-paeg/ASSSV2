@@ -2256,8 +2256,6 @@
 
 
 
-
-
 "use client"
 
 import type React from "react"
@@ -2319,9 +2317,12 @@ import {
   updateContract,
   getAdmins,
   createAdmin,
+  updateAdmin,
+  deleteAdmin
 } from "../actions/client-actions"
 import MainLayout from "@/components/Layout/MainLayout"
 import { useAuth } from "@/contexts/AuthContext"
+import { AdminFormErrors } from '@/types';
 
 export default function ClientDefinitionPage() {
   const router = useRouter()
@@ -2329,9 +2330,10 @@ export default function ClientDefinitionPage() {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState("creation")
   const [step, setStep] = useState(1)
- const [clients, setClients] = useState<{ client_id: string; name: string }[]>([])
-const [suggestedClientId, setSuggestedClientId] = useState<string | null>(null)
-const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+  const [clients, setClients] = useState<{ client_id: string; name: string }[]>([])
+  const [suggestedClientId, setSuggestedClientId] = useState<string | null>(null)
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
   const [clientData, setClientData] = useState<ClientFormData>({
     client_id: "",
     client_username: "",
@@ -2367,13 +2369,19 @@ const [selectedClientId, setSelectedClientId] = useState<string | null>(null)
     hil_admin_id: null,
     hil_admin_team: [],
   })
-const [admins, setAdmins] = useState<{ admin_id: number; name: string; designation: string; username: string }[]>([])
+const [admins, setAdmins] = useState<{ admin_id: number; name: string; designation: string; username: string; email: string;  }[]>([])
   const [newAdmin, setNewAdmin] = useState<AdminFormData>({
     name: "",
     designation: "",
     username: "",
     password: "",
+    email: "",
+    mobile_number: "",
   })
+  const [adminErrors, setAdminErrors] = useState<AdminFormErrors>({})
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+const [adminToDelete, setAdminToDelete] = useState<number | null>(null);
+
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(false)
   const [creatingClient, setCreatingClient] = useState(false)
@@ -2568,6 +2576,8 @@ const [admins, setAdmins] = useState<{ admin_id: number; name: string; designati
       setActiveTab("update")
     }
   }, [user])
+ 
+
 
   const fetchClientDetails = async (id: string) => {
     setLoading(true)
@@ -2618,6 +2628,12 @@ const [admins, setAdmins] = useState<{ admin_id: number; name: string; designati
       return
     }
 
+    const validationErrors = validateAdminForm(newAdmin)
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
+      return
+    }
+
     try {
       await createAdmin(newAdmin)
       toast({ title: "Success", description: "Admin created successfully." })
@@ -2626,7 +2642,10 @@ const [admins, setAdmins] = useState<{ admin_id: number; name: string; designati
         designation: "",
         username: "",
         password: "",
+        email: "",
+        mobile_number: ""
       })
+      setFormErrors({})
       const admins = await getAdmins()
       setAdmins(admins)
     } catch (err) {
@@ -2636,9 +2655,37 @@ const [admins, setAdmins] = useState<{ admin_id: number; name: string; designati
     }
   }
 
+
+  const validateAdminForm = (data: AdminFormData) => {
+    const errors: AdminFormErrors = {}
+    
+    if (!data.name.trim()) errors.name = 'Name is required'
+    if (!data.designation.trim()) errors.designation = 'Designation is required'
+    if (!data.username.trim()) errors.username = 'Username is required'
+    if (!data.password) errors.password = 'Password is required'
+    
+    if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+      errors.email = 'Please enter a valid email address'
+    }
+    
+    if (data.mobile_number && !/^\d{10}$/.test(data.mobile_number)) {
+      errors.mobile_number = 'Please enter a valid 10-digit mobile number'
+    }
+    
+    return errors
+  }
+
   const handleNewAdminChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setNewAdmin((prev) => ({ ...prev, [name]: value }))
+    
+    // Clear error when user starts typing
+    if (errors[name as keyof AdminFormErrors]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: undefined
+      }))
+    }
   }
 
   const handleHilAdminChange = (value: string) => {
@@ -2835,6 +2882,7 @@ const handleCreateStep2 = async () => {
       // Use contractData.client_id which should be set from step 1
       client_id: contractData.client_id,
       site_visit_date: siteVisitDates[0] || new Date().toISOString().split('T')[0],
+      escalation_matrix: contractData.escalation_matrix,
     };
 
     console.log('Contract payload:', contractPayload); // Debug log
@@ -2968,29 +3016,71 @@ const handleSelectClient = (value: string) => {
   }
 
   const saveEditedAdmin = async () => {
+    if (!editingAdminId) return;
+  
     try {
-      // Add your update admin API call here
-      // await updateAdmin(editingAdmin)
-      toast({ title: "Success", description: "Admin updated successfully." })
-      setEditingAdminId(null)
-      const admins = await getAdmins()
-      setAdmins(admins)
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to update admin", variant: "destructive" })
+      await updateAdmin(editingAdminId, editingAdmin); // call your server function
+  
+      // Optionally, refresh admins list after update
+      const updatedAdmins = await getAdmins();
+      setAdmins(updatedAdmins);
+  
+      // Reset editing state
+      setEditingAdminId(null);
+      setEditingAdmin({ name: '', designation: '', username: '', email: '', mobile_number: '', password: '' });
+    } catch (error: any) {
+      console.error('Update admin failed:', error.message);
+      toast({
+        title: 'Error updating admin',
+        description: error.message,
+        variant: 'destructive',
+      });
     }
-  }
-
-  const deleteAdmin = async (adminId: number) => {
+  };
+ 
+  const handleDeleteAdmin = (adminId: number) => {
+    setAdminToDelete(adminId);
+    setShowDeleteDialog(true);
+  };
+  
+  const confirmDeleteAdmin = async () => {
+    if (!adminToDelete) return;
     try {
-      // Add your delete admin API call here
-      // await deleteAdminById(adminId)
-      toast({ title: "Success", description: "Admin deleted successfully." })
-      const admins = await getAdmins()
-      setAdmins(admins)
+      await deleteAdmin(adminToDelete); // backend call
+      const updatedAdmins = await getAdmins(); // refresh list
+      setAdmins(updatedAdmins);
+      toast({
+        title: "Deleted",
+        description: "Admin deleted successfully",
+        variant: "default",
+      });
     } catch (error) {
-      toast({ title: "Error", description: "Failed to delete admin", variant: "destructive" })
+      console.error(error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete admin",
+        variant: "destructive",
+      });
+    } finally {
+      setShowDeleteDialog(false);
+      setAdminToDelete(null);
     }
+  };
+  
+  const cancelDelete = () => {
+    setShowDeleteDialog(false);
+    setAdminToDelete(null);
+  };
+  
+   async function deleteAdmin(adminId: number) {
+    const res = await fetch(`/api/admins/${adminId}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || 'Failed to delete admin');
+    }
+    return await res.json();
   }
+  
 
   const handleSiteVisitFrequencyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const frequency = Math.max(0, Number.parseInt(e.target.value) || 0);
@@ -3360,14 +3450,15 @@ const handleSelectClient = (value: string) => {
                                   </TableCell>
                                   <TableCell>{member.member_username}</TableCell>
                                   <TableCell>
-                                    <Button
+                                  <Button
                                       variant="ghost"
                                       size="sm"
-                                      onClick={() => removeMember(member.member_id, index)}
+                                      onClick={() => handleDeleteAdmin(member.member_id)}
                                       className="text-destructive hover:text-destructive hover:bg-destructive/10"
                                     >
                                       <Trash2 className="h-4 w-4" />
                                     </Button>
+
                                   </TableCell>
                                 </TableRow>
                               ))}
@@ -3609,6 +3700,40 @@ const handleSelectClient = (value: string) => {
                           </div>
                         </div>
                       )}
+                      <div className="space-y-2 col-span-3">
+                        <Label className="text-sm font-medium text-foreground">Escalation Matrix</Label>
+                        <p className="text-xs text-muted-foreground">Assign admins for each level: 0 (Base), 1 (Mid), 2 (Highest)</p>
+                        <div className="grid md:grid-cols-3 gap-4">
+                          {[0,1,2].map((level) => (
+                            <div key={level} className="space-y-2">
+                              <Label className="text-xs">Level {level}</Label>
+                              <Select
+                                onValueChange={(value) => {
+                                  const adminId = value === 'none' ? undefined : Number(value)
+                                  setContractData((prev) => {
+                                    const next = [...(prev.escalation_matrix || [0,0,0])]
+                                    next[level] = adminId || 0
+                                    return { ...prev, escalation_matrix: next }
+                                  })
+                                }}
+                                value={String((contractData.escalation_matrix || [0,0,0])[level] || 'none')}
+                              >
+                                <SelectTrigger className="bg-background border-border focus:border-accent focus:ring-accent/20">
+                                  <SelectValue placeholder="Select Admin" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">None</SelectItem>
+                                  {admins.map((admin) => (
+                                    <SelectItem key={admin.admin_id} value={admin.admin_id.toString()}>
+                                      {admin.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                       <div className="space-y-2">
                         <Label htmlFor="hil_admin_id" className="text-sm font-medium text-foreground">
                           Allocate HIL Admin
@@ -4364,7 +4489,7 @@ const handleSelectClient = (value: string) => {
                   </CardContent>
                 </Card>
               ) : (
-                <>
+                <div>
                   <Card className="shadow-xl border-0 bg-card/50 backdrop-blur-sm">
                     <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5 border-b border-border">
                       <div className="flex items-center gap-3">
@@ -4383,50 +4508,131 @@ const handleSelectClient = (value: string) => {
                           <Label htmlFor="name" className="text-sm font-medium text-foreground">
                             Name
                           </Label>
-                          <Input
-                            id="name"
-                            name="name"
-                            value={newAdmin.name}
-                            onChange={handleNewAdminChange}
-                            className="bg-background border-border focus:border-accent focus:ring-accent/20"
-                          />
+                          <div>
+                            <Input
+                              id="name"
+                              name="name"
+                              value={newAdmin.name}
+                              onChange={handleNewAdminChange}
+                              className={`bg-background border-border focus:border-accent focus:ring-accent/20 ${
+                                errors.name ? 'border-red-500' : ''
+                              }`}
+                            />
+                            {errors.name && (
+                              <p className="text-sm text-red-500 mt-1">{errors.name}</p>
+                            )}
+                          </div>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="designation" className="text-sm font-medium text-foreground">
                             Designation
                           </Label>
-                          <Input
-                            id="designation"
-                            name="designation"
-                            value={newAdmin.designation}
-                            onChange={handleNewAdminChange}
-                            className="bg-background border-border focus:border-accent focus:ring-accent/20"
-                          />
+                          <div>
+                            <Input
+                              id="designation"
+                              name="designation"
+                              value={newAdmin.designation}
+                              onChange={handleNewAdminChange}
+                              className={`bg-background border-border focus:border-accent focus:ring-accent/20 ${
+                                errors.designation ? 'border-red-500' : ''
+                              }`}
+                            />
+                            {errors.designation && (
+                              <p className="text-sm text-red-500 mt-1">{errors.designation}</p>
+                            )}
+                          </div>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="username" className="text-sm font-medium text-foreground">
                             Username
                           </Label>
-                          <Input
-                            id="username"
-                            name="username"
-                            value={newAdmin.username}
-                            onChange={handleNewAdminChange}
-                            className="bg-background border-border focus:border-accent focus:ring-accent/20"
-                          />
+                          <div>
+                            <Input
+                              id="username"
+                              name="username"
+                              value={newAdmin.username}
+                              onChange={handleNewAdminChange}
+                              className={`bg-background border-border focus:border-accent focus:ring-accent/20 ${
+                                errors.username ? 'border-red-500' : ''
+                              }`}
+                            />
+                            {errors.username && (
+                              <p className="text-sm text-red-500 mt-1">{errors.username}</p>
+                            )}
+                          </div>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="password" className="text-sm font-medium text-foreground">
                             Password
                           </Label>
-                          <Input
-                            id="password"
-                            name="password"
-                            type="password"
-                            value={newAdmin.password}
-                            onChange={handleNewAdminChange}
-                            className="bg-background border-border focus:border-accent focus:ring-accent/20"
-                          />
+                          <div className="relative">
+                            <Input
+                              id="password"
+                              name="password"
+                              type={showPassword ? "text" : "password"}
+                              value={newAdmin.password}
+                              onChange={handleNewAdminChange}
+                              className={`bg-background border-border focus:border-accent focus:ring-accent/20 pr-10 ${
+                                errors.password ? 'border-red-500' : ''
+                              }`}
+                            />
+                            <button
+                              type="button"
+                              className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground"
+                              onClick={() => setShowPassword(!showPassword)}
+                            >
+                              {showPassword ? (
+                                <EyeOff className="h-4 w-4" />
+                              ) : (
+                                <Eye className="h-4 w-4" />
+                              )}
+                            </button>
+                            {errors.password && (
+                              <p className="text-sm text-red-500 mt-1">{errors.password}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="email" className="text-sm font-medium text-foreground">
+                            Email (optional)
+                          </Label>
+                          <div>
+                            <Input
+                              id="email"
+                              name="email"
+                              type="email"
+                              value={newAdmin.email}
+                              onChange={handleNewAdminChange}
+                              className={`bg-background border-border focus:border-accent focus:ring-accent/20 ${
+                                errors.email ? 'border-red-500' : ''
+                              }`}
+                              placeholder="example@example.com"
+                            />
+                            {errors.email && (
+                              <p className="text-sm text-red-500 mt-1">{errors.email}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="mobile_number" className="text-sm font-medium text-foreground">
+                            Mobile Number (optional)
+                          </Label>
+                          <div>
+                            <Input
+                              id="mobile_number"
+                              name="mobile_number"
+                              type="tel"
+                              value={newAdmin.mobile_number}
+                              onChange={handleNewAdminChange}
+                              className={`bg-background border-border focus:border-accent focus:ring-accent/20 ${
+                                errors.mobile_number ? 'border-red-500' : ''
+                              }`}
+                              placeholder="1234567890"
+                            />
+                            {errors.mobile_number && (
+                              <p className="text-sm text-red-500 mt-1">{errors.mobile_number}</p>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="flex justify-end pt-6">
@@ -4439,114 +4645,146 @@ const handleSelectClient = (value: string) => {
                       </div>
                     </CardContent>
                   </Card>
+<>
+      <Card className="shadow-xl border-0 bg-card/50 backdrop-blur-sm">
+        <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5 border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary rounded-lg">
+              <Users className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div>
+              <CardTitle className="text-2xl text-foreground">Existing Admins</CardTitle>
+              <p className="text-muted-foreground mt-1">Manage system administrators</p>
+            </div>
+          </div>
+        </CardHeader>
 
-                  <Card className="shadow-xl border-0 bg-card/50 backdrop-blur-sm">
-                    <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5 border-b border-border">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-primary rounded-lg">
-                          <Users className="h-5 w-5 text-primary-foreground" />
+        <CardContent className="p-8">
+          <div className="rounded-lg border border-border overflow-hidden bg-background">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="font-semibold">Name</TableHead>
+                  <TableHead className="font-semibold">Designation</TableHead>
+                  <TableHead className="font-semibold">Username</TableHead>
+                  <TableHead className="font-semibold">Email</TableHead>
+                  <TableHead className="font-semibold">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+
+              <TableBody>
+                {admins.map((admin) =>
+                  editingAdminId === admin.admin_id ? (
+                    <TableRow key={admin.admin_id} className="bg-muted/20">
+                      <TableCell>
+                        <Input
+                          value={editingAdmin.name}
+                          onChange={(e) => setEditingAdmin((prev) => ({ ...prev, name: e.target.value }))}
+                          className="bg-background border-border"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          value={editingAdmin.designation}
+                          onChange={(e) =>
+                            setEditingAdmin((prev) => ({ ...prev, designation: e.target.value }))
+                          }
+                          className="bg-background border-border"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          value={editingAdmin.username}
+                          onChange={(e) =>
+                            setEditingAdmin((prev) => ({ ...prev, username: e.target.value }))
+                          }
+                          className="bg-background border-border"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          value={editingAdmin.email}
+                          onChange={(e) => setEditingAdmin((prev) => ({ ...prev, email: e.target.value }))}
+                          className="bg-background border-border"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={saveEditedAdmin}
+                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                          >
+                            <CheckCircle2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingAdminId(null)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <AlertCircle className="h-4 w-4" />
+                          </Button>
                         </div>
-                        <div>
-                          <CardTitle className="text-2xl text-foreground">Existing Admins</CardTitle>
-                          <p className="text-muted-foreground mt-1">Manage system administrators</p>
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    <TableRow key={admin.admin_id} className="hover:bg-muted/30 transition-colors">
+                      <TableCell className="font-medium">{admin.name}</TableCell>
+                      <TableCell>{admin.designation}</TableCell>
+                      <TableCell>{admin.username}</TableCell>
+                      <TableCell>{admin.email}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => startEditingAdmin(admin)}
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteAdmin(admin.admin_id)}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-8">
-                      <div className="rounded-lg border border-border overflow-hidden bg-background">
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="bg-muted/50">
-                              <TableHead className="font-semibold">Name</TableHead>
-                              <TableHead className="font-semibold">Designation</TableHead>
-                              <TableHead className="font-semibold">Username</TableHead>
-                              <TableHead className="font-semibold">Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {admins.map((admin) =>
-                              editingAdminId === admin.admin_id ? (
-                                <TableRow key={admin.admin_id} className="bg-muted/20">
-                                  <TableCell>
-                                    <Input
-                                      value={editingAdmin.name}
-                                      onChange={(e) => setEditingAdmin((prev) => ({ ...prev, name: e.target.value }))}
-                                      className="bg-background border-border"
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <Input
-                                      value={editingAdmin.designation}
-                                      onChange={(e) =>
-                                        setEditingAdmin((prev) => ({ ...prev, designation: e.target.value }))
-                                      }
-                                      className="bg-background border-border"
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <Input
-                                      value={editingAdmin.username}
-                                      onChange={(e) =>
-                                        setEditingAdmin((prev) => ({ ...prev, username: e.target.value }))
-                                      }
-                                      className="bg-background border-border"
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="flex gap-2">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={saveEditedAdmin}
-                                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                                      >
-                                        <CheckCircle2 className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setEditingAdminId(null)}
-                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                      >
-                                        <AlertCircle className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              ) : (
-                                <TableRow key={admin.admin_id} className="hover:bg-muted/30 transition-colors">
-                                  <TableCell className="font-medium">{admin.name}</TableCell>
-                                  <TableCell>{admin.designation}</TableCell>
-                                  <TableCell>{admin.username}</TableCell>
-                                  <TableCell>
-                                    <div className="flex gap-2">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => startEditingAdmin(admin)}
-                                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                      >
-                                        <Edit className="h-4 w-4" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => deleteAdmin(admin.admin_id)}
-                                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              ),
-                            )}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </>
+                      </TableCell>
+                    </TableRow>
+                  )
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="bg-white rounded-lg p-6 w-96 shadow-lg">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Confirm Delete</h3>
+            <p className="text-sm text-gray-700 mb-6">
+              Are you sure you want to delete this admin? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <Button variant="outline" onClick={cancelDelete}>
+                Cancel
+              </Button>
+              <Button variant="destructive" onClick={confirmDeleteAdmin}>
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+                </div>
               )}
             </TabsContent>
           </Tabs>
@@ -4555,6 +4793,3 @@ const handleSelectClient = (value: string) => {
     </MainLayout>
   )
 }
-
-
-

@@ -16,6 +16,94 @@
 //   description: string;
 // }
 
+// const issueCategories = {
+//   'Level-1 Control Systems': [
+//     'PLC/DCS CPU Fault',
+//     'PLC/DCS HPU Fault',
+//     'Micro-Sigma related Error',
+//     'MICA Logical Error',
+//     'MICA Operation Issue',
+//     'FieldBus Network Issue',
+//     'I/O Module Issue',
+//     'Firmware Related Error',
+//     'Historian/Data Logging Issue',
+//     'Unable to Understand'
+//   ],
+//   'Level-2 Control Systems': [
+//     'Level-2 Hardware Issue',
+//     'Setup Data Issue',
+//     'Adaptation Data Issue',
+//     'Communication Interface Issue',
+//     'Performance Issue',
+//     'License related Issue',
+//     'Security Issue',
+//     'Unable to Understand'
+//   ],
+//   'HMI/SCADA Systems': [
+//     'HMI PC Hardware Issue',
+//     'Display/Screen Issue',
+//     'Alarm/Event Handling',
+//     'Data Acquisition Failure',
+//     'Tag Mapping Error',
+//     'License related Issue',
+//     'Unable to Understand'
+//   ],
+//   'Drive Systems': [
+//     'Electrical & Hardware Fault',
+//     'Motor & Load-Related Issues',
+//     'M-Tool Configuration Issue',
+//     'Communication Failure',
+//     'Earthing Problem',
+//     'Power Supply Fluctuation',
+//     'Unable to Understand'
+//   ],
+//   'Electrical Infrastructure': [
+//     'Panel Component Failure',
+//     'Breaker/Contactor Issue',
+//     'Cable/Wiring Fault',
+//     'Earthing Problem',
+//     'Power Supply Fluctuation',
+//     'UPS/Transformer Issue',
+//     'Unable to Understand'
+//   ],
+//   'Field Instrumentation': [
+//     'Sensor Calibration Drift',
+//     'Transmitter Signal Loss',
+//     'Actuator Malfunction',
+//     'Valve Positioning Error',
+//     'Unable to Understand'
+//   ],
+//   'Network & Communication': [
+//     'Switch/Router Failure',
+//     'Protocol Communication Error',
+//     'Cybersecurity Alert',
+//     'VPN/Remote Access Issue',
+//     'Unable to Understand'
+//   ],
+//   'Software & Licensing': [
+//     'License Expiry',
+//     'Software Bug/Crash',
+//     'Unable to Understand'
+//   ],
+//   'Preventive Maintenance': [
+//     'Scheduled Inspection',
+//     'Calibration Request',
+//     'Health Audit Report',
+//     'Drive Tuning',
+//     'Unable to Understand'
+//   ],
+//   'Process Related': ['Unable to Understand'],
+//   'Change Request': [
+//     'L1 Logic Modification',
+//     'L2 Logic Modification',
+//     'SCADA Screen Update',
+//     'New Device Integration',
+//     'Alarm Logic Change',
+//     'Panel Expansion',
+//     'Unable to Understand'
+//   ]
+// };
+
 // const CreateTicket: React.FC = () => {
 //   const { user } = useAuth();
 //   const router = useRouter();
@@ -28,6 +116,8 @@
 //   const [location, setLocation] = useState('');
 //   const [actionsTaken, setActionsTaken] = useState('');
 //   const [creatorName, setCreatorName] = useState('');
+//   const [issueCategory, setIssueCategory] = useState('');
+//   const [issueSubcategory, setIssueSubcategory] = useState('');
 //   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 //   const [ticketNumber, setTicketNumber] = useState('');
 
@@ -71,6 +161,8 @@
 
 //       const formData = {
 //         issue_title: title,
+//         issue_category: issueCategory,
+//         issue_subcategory: issueSubcategory,
 //         priority,
 //         description,
 //         location,
@@ -149,6 +241,45 @@
 //             </div>
 
 //             <div className="space-y-2">
+//               <Label htmlFor="issue-category">Issue Category *</Label>
+//               <Select value={issueCategory} onValueChange={(value) => {
+//                 setIssueCategory(value);
+//                 setIssueSubcategory(''); // Reset subcategory when category changes
+//               }}>
+//                 <SelectTrigger>
+//                   <SelectValue placeholder="Select issue category" />
+//                 </SelectTrigger>
+//                 <SelectContent>
+//                   {Object.keys(issueCategories).map((category) => (
+//                     <SelectItem key={category} value={category}>
+//                       {category}
+//                     </SelectItem>
+//                   ))}
+//                 </SelectContent>
+//               </Select>
+//             </div>
+
+//             <div className="space-y-2">
+//               <Label htmlFor="issue-subcategory">Issue Subcategory *</Label>
+//               <Select
+//                 value={issueSubcategory}
+//                 onValueChange={setIssueSubcategory}
+//                 disabled={!issueCategory}
+//               >
+//                 <SelectTrigger>
+//                   <SelectValue placeholder="Select issue subcategory" />
+//                 </SelectTrigger>
+//                 <SelectContent>
+//                   {issueCategory && issueCategories[issueCategory].map((subcategory) => (
+//                     <SelectItem key={subcategory} value={subcategory}>
+//                       {subcategory}
+//                     </SelectItem>
+//                   ))}
+//                 </SelectContent>
+//               </Select>
+//             </div>
+
+//             <div className="space-y-2">
 //               <Label htmlFor="priority">Priority Level</Label>
 //               <Select value={priority} onValueChange={setPriority}>
 //                 <SelectTrigger>
@@ -203,6 +334,7 @@
 //                     <Input
 //                       id={`time-${index}`}
 //                       placeholder="HH:MM or date/time"
+//                       type='time'
 //                       value={event.time}
 //                       onChange={(e) => updateTimelineEvent(index, 'time', e.target.value)}
 //                     />
@@ -303,7 +435,7 @@
 //             <div className="flex gap-4 pt-4">
 //               <Button 
 //                 type="submit" 
-//                 disabled={isLoading || !title || !description || !creatorName}
+//                 disabled={isLoading || !title || !description || !creatorName || !issueCategory || !issueSubcategory}
 //                 className="flex-1 flex items-center justify-center"
 //               >
 //                 {isLoading ? (
@@ -360,6 +492,8 @@
 // };
 
 // export default CreateTicket;
+
+
 
 
 
@@ -486,7 +620,9 @@ const CreateTicket: React.FC = () => {
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([{ time: '', description: '' }]);
   const [location, setLocation] = useState('');
   const [actionsTaken, setActionsTaken] = useState('');
-  const [creatorName, setCreatorName] = useState('');
+  const [creatorName, setCreatorName] = useState(user?.name || user?.client_username || ''); // Default to user's name
+  const [creatorNameOption, setCreatorNameOption] = useState(user?.name || user?.client_username ? 'member' : 'custom'); // Track dropdown choice
+  const [customCreatorName, setCustomCreatorName] = useState(''); // For custom input
   const [issueCategory, setIssueCategory] = useState('');
   const [issueSubcategory, setIssueSubcategory] = useState('');
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
@@ -530,6 +666,9 @@ const CreateTicket: React.FC = () => {
         }))
       );
 
+      // Use customCreatorName if "custom" is selected, else use creatorName
+      const finalCreatorName = creatorNameOption === 'custom' ? customCreatorName : creatorName;
+
       const formData = {
         issue_title: title,
         issue_category: issueCategory,
@@ -538,9 +677,9 @@ const CreateTicket: React.FC = () => {
         description,
         location,
         actions_performed: actionsTaken,
-        creator_name: creatorName,
+        creator_name: finalCreatorName,
         attachments: attachmentsBase64.join(','),
-        comments: JSON.stringify(timelineEvents),
+        timeline: timelineEvents,
       };
 
       const response = await fetch('/api/tickets?action=create', {
@@ -615,7 +754,7 @@ const CreateTicket: React.FC = () => {
               <Label htmlFor="issue-category">Issue Category *</Label>
               <Select value={issueCategory} onValueChange={(value) => {
                 setIssueCategory(value);
-                setIssueSubcategory(''); // Reset subcategory when category changes
+                setIssueSubcategory('');
               }}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select issue category" />
@@ -704,12 +843,13 @@ const CreateTicket: React.FC = () => {
                     <Label htmlFor={`time-${index}`}>Time</Label>
                     <Input
                       id={`time-${index}`}
-                      placeholder="HH:MM or date/time"
+                      placeholder="YYYY-MM-DDTHH:MM (24-hour format)"
+                      type="datetime-local"
                       value={event.time}
                       onChange={(e) => updateTimelineEvent(index, 'time', e.target.value)}
                     />
                   </div>
-                  <div className="flex-2">
+                  <div className="flex-[2]">
                     <Label htmlFor={`desc-${index}`}>Description</Label>
                     <Input
                       id={`desc-${index}`}
@@ -733,25 +873,42 @@ const CreateTicket: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="actions-taken">Actions Taken</Label>
-              <Textarea
-                id="actions-taken"
-                placeholder="Describe any actions taken to resolve the issue"
-                value={actionsTaken}
-                onChange={(e) => setActionsTaken(e.target.value)}
-                rows={4}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="creator-name">Ticket Creator Name</Label>
-              <Input
-                id="creator-name"
-                placeholder="Input Ticket creator name"
-                value={creatorName}
-                onChange={(e) => setCreatorName(e.target.value)}
-                required
-              />
+              <Label htmlFor="creator-name">Ticket Creator Name *</Label>
+              <Select
+                value={creatorNameOption}
+                onValueChange={(value) => {
+                  setCreatorNameOption(value);
+                  if (value === 'member') {
+                    setCreatorName(user?.name || user?.client_username || '');
+                    setCustomCreatorName(''); // Clear custom input
+                  } else {
+                    setCreatorName('');
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select creator name" />
+                </SelectTrigger>
+                <SelectContent>
+                  {user?.name || user?.client_username ? (
+                    <SelectItem value="member">{user.name || user.client_username}</SelectItem>
+                  ) : null}
+                  <SelectItem value="custom">Custom</SelectItem>
+                </SelectContent>
+              </Select>
+              {creatorNameOption === 'custom' && (
+                <Input
+                  id="custom-creator-name"
+                  placeholder="Enter custom creator name"
+                  value={customCreatorName}
+                  onChange={(e) => {
+                    setCustomCreatorName(e.target.value);
+                    setCreatorName(e.target.value);
+                  }}
+                  required
+                  className="mt-2"
+                />
+              )}
             </div>
 
             <div className="space-y-2">
@@ -803,9 +960,17 @@ const CreateTicket: React.FC = () => {
             </div>
 
             <div className="flex gap-4 pt-4">
-              <Button 
-                type="submit" 
-                disabled={isLoading || !title || !description || !creatorName || !issueCategory || !issueSubcategory}
+              <Button
+                type="submit"
+                disabled={
+                  isLoading ||
+                  !title ||
+                  !description ||
+                  !issueCategory ||
+                  !issueSubcategory ||
+                  (creatorNameOption === 'custom' && !customCreatorName) ||
+                  (creatorNameOption === 'member' && !creatorName)
+                }
                 className="flex-1 flex items-center justify-center"
               >
                 {isLoading ? (
@@ -817,9 +982,9 @@ const CreateTicket: React.FC = () => {
                   'Create Ticket'
                 )}
               </Button>
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => router.push('/tickets')}
               >
                 Cancel
@@ -828,7 +993,7 @@ const CreateTicket: React.FC = () => {
           </form>
         </CardContent>
       </Card>
-      
+
       <Dialog open={showSuccessDialog} onOpenChange={(open) => {
         setShowSuccessDialog(open);
         if (!open) router.push('/tickets');

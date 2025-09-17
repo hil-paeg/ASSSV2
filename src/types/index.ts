@@ -57,6 +57,20 @@ export interface CloseTicket {
 //   client?: { client_username: string };
 //   close_ticket?: CloseTicket;
 // }
+export interface TimelineEvent {
+  time: string; 
+  description: string;
+}
+
+export interface AdminFormErrors {
+  name?: string;
+  designation?: string;
+  username?: string;
+  password?: string;
+  email?: string;
+  mobile_number?: string;
+}
+
 
 export interface Ticket {
   id: number;
@@ -74,6 +88,7 @@ export interface Ticket {
   attachments: string | null;
   creator_name: string | null;
   status: "raised" | "in-progress" | "confirmed by oem" | "resolved" | "closed";
+  timeline: TimelineEvent[] | null;
   comments: string | null;
   ticketType: string | null;
   ticket_type: string | null;

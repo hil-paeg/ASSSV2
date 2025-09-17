@@ -18,7 +18,6 @@ export async function getClients() {
   }
 }
 
-
 export async function suggestClientId() {
   try {
     const maxClient = await prisma.client.findFirst({
@@ -42,7 +41,6 @@ export async function suggestClientId() {
   }
 }
 
-
 export async function getClientDetails(client_id: string) {
   if (!client_id || typeof client_id !== 'string') {
     throw new Error('Invalid or missing client_id');
@@ -59,6 +57,28 @@ export async function getClientDetails(client_id: string) {
 
     if (!client) throw new Error('Client not found');
 
+    const contract = client.contracts[0];
+
+    // resolve escalation matrix admins
+    let escalationAdmins: any[] = [];
+    if (contract?.escalation_matrix?.length) {
+      escalationAdmins = await prisma.admin.findMany({
+        where: { admin_id: { in: contract.escalation_matrix } },
+        select: {
+          admin_id: true,
+          name: true,
+          designation: true,
+          email: true,
+          mobile_number: true,
+        },
+      });
+
+      // maintain the order of escalation_matrix [3,1,2]
+      escalationAdmins = contract.escalation_matrix.map(
+        (id) => escalationAdmins.find((a) => a.admin_id === id) || { admin_id: id, name: "Unknown", designation: "N/A" }
+      );
+    }
+
     return {
       client_id: client.client_id,
       client_username: client.client_username,
@@ -67,7 +87,7 @@ export async function getClientDetails(client_id: string) {
       payment_cycle: client.payment_cycle,
       email: client.email || "",
       members: client.members.map((m) => ({
-        member_id: m.member_id, // number
+        member_id: m.member_id,
         client_id: m.client_id,
         member_name: m.member_name,
         designation: m.designation,
@@ -75,26 +95,28 @@ export async function getClientDetails(client_id: string) {
         phone_number: m.phone_number || "",
         escalation_level: m.escalation_level,
         member_username: m.member_username,
-        member_password: "", // Don't return password
+        member_password: "",
       })),
-      contract: client.contracts[0]
+      contract: contract
         ? {
-            client_id: client.contracts[0].client_id,
-            allowed_tickets: client.contracts[0].allowed_tickets,
-            total_tickets_used: client.contracts[0].total_tickets_used,
-            ticket_typeRS1: client.contracts[0].ticket_typeRS1,
-            ticket_typeRS1_used: client.contracts[0].ticket_typeRS1_used,
-            ticket_typeRS2: client.contracts[0].ticket_typeRS2,
-            ticket_typeRS2_used: client.contracts[0].ticket_typeRS2_used,
-            ticket_typeRS3_1: client.contracts[0].ticket_typeRS3_1,
-            ticket_typeRS3_1_used: client.contracts[0].ticket_typeRS3_1_used,
-            ticket_typeRS3_2: client.contracts[0].ticket_typeRS3_2,
-            ticket_typeRS3_2_used: client.contracts[0].ticket_typeRS3_2_used,
-            site_visit_frequency: client.contracts[0].site_visit_frequency,
+            client_id: contract.client_id,
+            allowed_tickets: contract.allowed_tickets,
+            total_tickets_used: contract.total_tickets_used,
+            ticket_typeRS1: contract.ticket_typeRS1,
+            ticket_typeRS1_used: contract.ticket_typeRS1_used,
+            ticket_typeRS2: contract.ticket_typeRS2,
+            ticket_typeRS2_used: contract.ticket_typeRS2_used,
+            ticket_typeRS3_1: contract.ticket_typeRS3_1,
+            ticket_typeRS3_1_used: contract.ticket_typeRS3_1_used,
+            ticket_typeRS3_2: contract.ticket_typeRS3_2,
+            ticket_typeRS3_2_used: contract.ticket_typeRS3_2_used,
+            site_visit_frequency: contract.site_visit_frequency,
             site_visit_date:
-              client.contracts[0].siteVisits[0]?.date.toISOString().split('T')[0] || "",
-            hil_admin_id: client.contracts[0].hil_admin_id,
-            hil_admin_team: client.contracts[0].hil_admin_team || [],
+              contract.siteVisits[0]?.date.toISOString().split('T')[0] || "",
+            hil_admin_id: contract.hil_admin_id,
+            hil_admin_team: contract.hil_admin_team || [],
+            escalation_matrix: contract.escalation_matrix,
+            escalation_admins: escalationAdmins, // 👈 full details of admins
           }
         : null,
     };
@@ -103,71 +125,6 @@ export async function getClientDetails(client_id: string) {
     throw new Error('Failed to fetch client details');
   }
 }
-
-// export async function getClientDetails(client_id: string) {
-//   console.log('client_id received:', client_id);  // Debugging line
-
-//   if (!client_id || typeof client_id !== 'string') {
-//     throw new Error('Invalid or missing client_id');
-//   }
-
-//   try {
-//     const client = await prisma.client.findUnique({
-//       where: { client_id },  // Ensure client_id is a string
-//       include: {
-//         members: true,
-//         contracts: { include: { siteVisits: true } },
-//       },
-//     });
-
-//     if (!client) throw new Error('Client not found');
-
-//     return {
-//       client_id: client.client_id,
-//       client_username: client.client_username,
-//       name: client.name,
-//       start_date: client.start_date.toISOString().split('T')[0],
-//       payment_cycle: client.payment_cycle,
-//       members: client.members.map((m) => ({
-//         member_id: m.member_id,
-//         client_id: m.client_id,
-//         member_name: m.member_name,
-//         designation: m.designation,
-//         email: m.email,
-//         phone_number: m.phone_number,
-//         escalation_level: m.escalation_level,
-//         member_username: m.member_username,
-//         member_password: m.member_password,
-//       })),
-//       contract: client.contracts[0]
-//         ? {
-//             client_id: client.contracts[0].client_id,
-//             allowed_tickets: client.contracts[0].allowed_tickets,
-//             total_tickets_used: client.contracts[0].total_tickets_used,
-//             ticket_typeRS1: client.contracts[0].ticket_typeRS1,
-//             ticket_typeRS1_used: client.contracts[0].ticket_typeRS1_used,
-//             ticket_typeRS2: client.contracts[0].ticket_typeRS2,
-//             ticket_typeRS2_used: client.contracts[0].ticket_typeRS2_used,
-//             ticket_typeRS3_1: client.contracts[0].ticket_typeRS3_1,
-//             ticket_typeRS3_1_used: client.contracts[0].ticket_typeRS3_1_used,
-//             ticket_typeRS3_2: client.contracts[0].ticket_typeRS3_2,
-//             ticket_typeRS3_2_used: client.contracts[0].ticket_typeRS3_2_used,
-//             site_visit_frequency: client.contracts[0].site_visit_frequency,
-//             site_visit_date:
-//               client.contracts[0].siteVisits[0]?.date.toISOString().split('T')[0] || '',
-//             hil_admin_id: client.contracts[0].hil_admin_id,
-//             hil_admin_team: client.contracts[0].hil_admin_team,
-//           }
-//         : null,
-//     };
-//   } catch (error) {
-//     console.error('getClientDetails error:', error);
-//     throw new Error('Failed to fetch client details');
-//   }
-// };
-
-// Create client and members
-
 
 
 export async function createClient(clientData: ClientFormData, members: MemberFormData[]) {
@@ -337,6 +294,7 @@ export async function createOrUpdateContract(contractData: ContractFormData) {
         site_visit_frequency: contractData.site_visit_frequency,
         hil_admin_id: contractData.hil_admin_id,
         hil_admin_team: contractData.hil_admin_team,
+        escalation_matrix: contractData.escalation_matrix || undefined,
         siteVisits: {
           deleteMany: {},
           create: siteVisitDates.map((date) => ({ date })),
@@ -357,6 +315,7 @@ export async function createOrUpdateContract(contractData: ContractFormData) {
         site_visit_frequency: contractData.site_visit_frequency,
         hil_admin_id: contractData.hil_admin_id,
         hil_admin_team: contractData.hil_admin_team,
+        escalation_matrix: contractData.escalation_matrix || undefined,
         siteVisits: {
           create: siteVisitDates.map((date) => ({ date })),
         },
@@ -369,7 +328,6 @@ export async function createOrUpdateContract(contractData: ContractFormData) {
 }
 
 
-
 export const updateContract = createOrUpdateContract;
 
 // Fetch all admins for dropdown
@@ -379,7 +337,7 @@ export async function getAdmins() {
       throw new Error('Prisma Admin model is not initialized');
     }
     return await prisma.admin.findMany({
-      select: { admin_id: true, name: true, designation: true, username: true },
+      select: { admin_id: true, name: true, designation: true, username: true, email: true, mobile_number: true },
     });
   } catch (error) {
     throw new Error(`Failed to fetch admins: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -404,6 +362,8 @@ export async function createAdmin(adminData: AdminFormData) {
         designation: adminData.designation,
         username: adminData.username,
         password: adminData.password,
+        email: adminData.email,
+        mobile_number: adminData.mobile_number,
       },
     });
   } catch (error) {
@@ -411,7 +371,7 @@ export async function createAdmin(adminData: AdminFormData) {
   }
 }
 
-// NEW: Fetch current admin ID from JWT token (server-side)
+// Fetch current admin ID from JWT token 
 export async function getCurrentAdminId(): Promise<number> {
   try {
     // Get token from cookies (server-side access)
@@ -452,3 +412,191 @@ export async function getCurrentAdminId(): Promise<number> {
     return 0;
   }
 }
+
+
+// Update admin
+export async function updateAdmin(adminId: number, adminData: Partial<AdminFormData>) {
+  try {
+    if (!prisma.admin) {
+      throw new Error("Prisma Admin model is not initialized");
+    }
+
+    // Ensure username is unique if updating username
+    if (adminData.username) {
+      const existingAdmin = await prisma.admin.findUnique({
+        where: { username: adminData.username },
+      });
+
+      if (existingAdmin && existingAdmin.admin_id !== adminId) {
+        throw new Error("Username already taken by another admin");
+      }
+    }
+
+    await prisma.admin.update({
+      where: { admin_id: adminId },
+      data: {
+        name: adminData.name,
+        designation: adminData.designation,
+        username: adminData.username,
+        email: adminData.email,
+        mobile_number: adminData.mobile_number,
+        ...(adminData.password ? { password: adminData.password } : {}), // update password only if provided
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    throw new Error(
+      `Failed to update admin: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
+  }
+}
+
+// Delete admin
+export async function deleteAdmin(adminId: number) {
+  try {
+    if (!prisma.admin) {
+      throw new Error("Prisma Admin model is not initialized");
+    }
+
+    await prisma.admin.delete({
+      where: { admin_id: adminId },
+    });
+
+    return { success: true };
+  } catch (error) {
+    throw new Error(
+      `Failed to delete admin: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
+  }
+}
+
+
+
+
+// export async function getClientDetails(client_id: string) {
+//   if (!client_id || typeof client_id !== 'string') {
+//     throw new Error('Invalid or missing client_id');
+//   }
+
+//   try {
+//     const client = await prisma.client.findUnique({
+//       where: { client_id },
+//       include: {
+//         members: true,
+//         contracts: { include: { siteVisits: true } },
+//       },
+//     });
+
+//     if (!client) throw new Error('Client not found');
+
+//     return {
+//       client_id: client.client_id,
+//       client_username: client.client_username,
+//       name: client.name,
+//       start_date: client.start_date.toISOString().split('T')[0],
+//       payment_cycle: client.payment_cycle,
+//       email: client.email || "",
+//       members: client.members.map((m) => ({
+//         member_id: m.member_id, // number
+//         client_id: m.client_id,
+//         member_name: m.member_name,
+//         designation: m.designation,
+//         email: m.email,
+//         phone_number: m.phone_number || "",
+//         escalation_level: m.escalation_level,
+//         member_username: m.member_username,
+//         member_password: "", // Don't return password
+//       })),
+//       contract: client.contracts[0]
+//         ? {
+//             client_id: client.contracts[0].client_id,
+//             allowed_tickets: client.contracts[0].allowed_tickets,
+//             total_tickets_used: client.contracts[0].total_tickets_used,
+//             ticket_typeRS1: client.contracts[0].ticket_typeRS1,
+//             ticket_typeRS1_used: client.contracts[0].ticket_typeRS1_used,
+//             ticket_typeRS2: client.contracts[0].ticket_typeRS2,
+//             ticket_typeRS2_used: client.contracts[0].ticket_typeRS2_used,
+//             ticket_typeRS3_1: client.contracts[0].ticket_typeRS3_1,
+//             ticket_typeRS3_1_used: client.contracts[0].ticket_typeRS3_1_used,
+//             ticket_typeRS3_2: client.contracts[0].ticket_typeRS3_2,
+//             ticket_typeRS3_2_used: client.contracts[0].ticket_typeRS3_2_used,
+//             site_visit_frequency: client.contracts[0].site_visit_frequency,
+//             site_visit_date:
+//               client.contracts[0].siteVisits[0]?.date.toISOString().split('T')[0] || "",
+//             hil_admin_id: client.contracts[0].hil_admin_id,
+//             hil_admin_team: client.contracts[0].hil_admin_team || [],
+//             escalation_matrix: (client.contracts[0] as any).escalation_matrix || [0,0,0],
+//           }
+//         : null,
+//     };
+//   } catch (error) {
+//     console.error('getClientDetails error:', error);
+//     throw new Error('Failed to fetch client details');
+//   }
+// }
+
+
+// export async function getClientDetails(client_id: string) {
+//   console.log('client_id received:', client_id);  // Debugging line
+
+//   if (!client_id || typeof client_id !== 'string') {
+//     throw new Error('Invalid or missing client_id');
+//   }
+
+//   try {
+//     const client = await prisma.client.findUnique({
+//       where: { client_id },  // Ensure client_id is a string
+//       include: {
+//         members: true,
+//         contracts: { include: { siteVisits: true } },
+//       },
+//     });
+
+//     if (!client) throw new Error('Client not found');
+
+//     return {
+//       client_id: client.client_id,
+//       client_username: client.client_username,
+//       name: client.name,
+//       start_date: client.start_date.toISOString().split('T')[0],
+//       payment_cycle: client.payment_cycle,
+//       members: client.members.map((m) => ({
+//         member_id: m.member_id,
+//         client_id: m.client_id,
+//         member_name: m.member_name,
+//         designation: m.designation,
+//         email: m.email,
+//         phone_number: m.phone_number,
+//         escalation_level: m.escalation_level,
+//         member_username: m.member_username,
+//         member_password: m.member_password,
+//       })),
+//       contract: client.contracts[0]
+//         ? {
+//             client_id: client.contracts[0].client_id,
+//             allowed_tickets: client.contracts[0].allowed_tickets,
+//             total_tickets_used: client.contracts[0].total_tickets_used,
+//             ticket_typeRS1: client.contracts[0].ticket_typeRS1,
+//             ticket_typeRS1_used: client.contracts[0].ticket_typeRS1_used,
+//             ticket_typeRS2: client.contracts[0].ticket_typeRS2,
+//             ticket_typeRS2_used: client.contracts[0].ticket_typeRS2_used,
+//             ticket_typeRS3_1: client.contracts[0].ticket_typeRS3_1,
+//             ticket_typeRS3_1_used: client.contracts[0].ticket_typeRS3_1_used,
+//             ticket_typeRS3_2: client.contracts[0].ticket_typeRS3_2,
+//             ticket_typeRS3_2_used: client.contracts[0].ticket_typeRS3_2_used,
+//             site_visit_frequency: client.contracts[0].site_visit_frequency,
+//             site_visit_date:
+//               client.contracts[0].siteVisits[0]?.date.toISOString().split('T')[0] || '',
+//             hil_admin_id: client.contracts[0].hil_admin_id,
+//             hil_admin_team: client.contracts[0].hil_admin_team,
+//           }
+//         : null,
+//     };
+//   } catch (error) {
+//     console.error('getClientDetails error:', error);
+//     throw new Error('Failed to fetch client details');
+//   }
+// };
+
+// Create client and members

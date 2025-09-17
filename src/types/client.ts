@@ -36,6 +36,7 @@ export interface ContractFormData {
   site_visit_date: string;
   hil_admin_id: number | null;
   hil_admin_team: number[];
+  escalation_matrix?: number[]; // [adminIdLevel0, adminIdLevel1, adminIdLevel2]
 }
 
 export interface AdminFormData {
@@ -44,4 +45,6 @@ export interface AdminFormData {
   designation: string;
   username: string;
   password: string;
+  email?: string;
+  mobile_number?: string;
 }
