@@ -69,6 +69,13 @@ interface ClientResponse {
 
 export async function GET(req: NextRequest) {
   try {
+    // Optional availability check by query param
+    const { searchParams } = new URL(req.url);
+    const clientIdQuery = searchParams.get('client_id');
+    if (clientIdQuery) {
+      const exists = await prisma.client.findUnique({ where: { client_id: clientIdQuery }, select: { client_id: true } });
+      return NextResponse.json({ exists: !!exists });
+    }
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized: Missing or invalid Authorization header' }, { status: 401 });
@@ -160,6 +167,102 @@ export async function GET(req: NextRequest) {
     if (error.name === 'JsonWebTokenError') {
       return NextResponse.json({ error: 'Invalid token. Please log in again.' }, { status: 401 });
     }
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { client, members } = body as {
+      client: {
+        client_id: string | number;
+        client_username: string;
+        client_password: string;
+        name: string;
+        start_date: string;
+        payment_cycle?: string | null;
+      };
+      members: Array<{
+        member_name: string;
+        designation: string;
+        email: string;
+        phone_number?: string | null;
+        escalation_level: number;
+        member_username: string;
+        member_password: string;
+      }>;
+    };
+
+    if (!client || !client.client_id || !client.client_username || !client.client_password || !client.name || !client.start_date) {
+      return NextResponse.json({ error: 'Missing required client fields' }, { status: 400 });
+    }
+    const client_id = String(client.client_id);
+    if (!/^CLIENT\d{3,}$|^[A-Za-z0-9_-]+$/.test(client_id)) {
+      return NextResponse.json({ error: 'Invalid client_id format' }, { status: 400 });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(client.client_username)) {
+      return NextResponse.json({ error: 'Client username must be a valid email' }, { status: 400 });
+    }
+
+    // Uniqueness: client_id
+    const existingClient = await prisma.client.findUnique({ where: { client_id } });
+    if (existingClient) {
+      return NextResponse.json({ error: 'Client ID already exists' }, { status: 409 });
+    }
+
+    // Validate members escalation: > 0 and unique per list
+    if (members && members.length) {
+      const levels = members.map((m) => m.escalation_level);
+      if (levels.some((l) => typeof l !== 'number' || l <= 0)) {
+        return NextResponse.json({ error: 'Escalation levels must be numbers greater than 0' }, { status: 400 });
+      }
+      const uniqueLevels = new Set(levels);
+      if (uniqueLevels.size !== levels.length) {
+        return NextResponse.json({ error: 'Duplicate escalation levels detected' }, { status: 400 });
+      }
+      for (const m of members) {
+        if (m.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m.email)) {
+          return NextResponse.json({ error: `Invalid email for member ${m.member_name}` }, { status: 400 });
+        }
+        if (m.phone_number && !/^\d{10}$/.test(m.phone_number)) {
+          return NextResponse.json({ error: `Phone must be 10 digits for member ${m.member_name}` }, { status: 400 });
+        }
+      }
+    }
+
+    // Create client
+    const created = await prisma.client.create({
+      data: {
+        client_id,
+        client_username: client.client_username,
+        client_password: client.client_password,
+        name: client.name,
+        start_date: new Date(client.start_date),
+        payment_cycle: client.payment_cycle || null,
+      },
+    });
+
+    if (members && members.length) {
+      await prisma.clientMember.createMany({
+        data: members.map((m) => ({
+          client_id,
+          member_name: m.member_name,
+          designation: m.designation,
+          email: m.email,
+          phone_number: m.phone_number || null,
+          escalation_level: m.escalation_level,
+          member_username: m.member_username,
+          member_password: m.member_password,
+        })),
+      });
+    }
+
+    return NextResponse.json({ client_id: created.client_id }, { status: 201 });
+  } catch (error: any) {
+    console.error('Error creating client:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   } finally {
     await prisma.$disconnect();

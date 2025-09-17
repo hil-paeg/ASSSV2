@@ -12,6 +12,7 @@ interface ClientFormData {
   client_id: number;
   client_username: string;
   client_password: string;
+  client_password_confirm?: string;
   name: string;
   start_date: string; // YYYY-MM-DD format
   payment_cycle: string | null;
@@ -25,6 +26,7 @@ interface MemberFormData {
   escalation_level: number;
   member_username: string;
   member_password: string;
+  member_password_confirm?: string;
 }
 
 export default function CreateClientPage() {
@@ -33,6 +35,7 @@ export default function CreateClientPage() {
     client_id: 0,
     client_username: '',
     client_password: '',
+    client_password_confirm: '',
     name: '',
     start_date: '',
     payment_cycle: null,
@@ -46,9 +49,33 @@ export default function CreateClientPage() {
     escalation_level: 1,
     member_username: '',
     member_password: '',
+    member_password_confirm: '',
   });
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [clientIdAvailable, setClientIdAvailable] = useState<null | boolean>(null);
+  const [checkingClientId, setCheckingClientId] = useState(false);
+
+  const checkClientIdAvailability = async (val: number) => {
+    if (!val || val <= 0) {
+      setClientIdAvailable(null);
+      return;
+    }
+    setCheckingClientId(true);
+    try {
+      const res = await fetch(`/api/clients?client_id=${encodeURIComponent(String(val))}`);
+      const data = await res.json();
+      setClientIdAvailable(!data.exists);
+      if (data.exists) setFieldErrors((prev) => ({ ...prev, client_id: 'Client ID already exists' }));
+      else setFieldErrors((prev) => ({ ...prev, client_id: '' }));
+    } catch (_) {
+      setClientIdAvailable(null);
+    } finally {
+      setCheckingClientId(false);
+    }
+  };
 
   const handleClientChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -56,6 +83,7 @@ export default function CreateClientPage() {
       ...prev,
       [name]: name === 'client_id' || name === 'escalation_level' ? parseInt(value) || 0 : value,
     }));
+    setFieldErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
   const handleNewMemberChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -64,6 +92,7 @@ export default function CreateClientPage() {
       ...prev,
       [name]: name === 'escalation_level' ? parseInt(value) || 0 : value,
     }));
+    setFieldErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
   const addMember = () => {
@@ -72,15 +101,31 @@ export default function CreateClientPage() {
       setError('Escalation level must be unique per client.');
       return;
     }
+    // Validate required member fields
+    const localErrors: Record<string, string> = {};
+    if (!newMember.member_name.trim()) localErrors.member_name = 'Member name is required';
+    if (!newMember.email.trim()) localErrors.email = 'Email is required';
+    if (newMember.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newMember.email)) localErrors.email = 'Invalid email format';
+    if (newMember.phone_number && !/^\d{10}$/.test(newMember.phone_number)) localErrors.phone_number = 'Phone must be 10 digits';
+    if (newMember.escalation_level <= 0) localErrors.escalation_level = 'Escalation must be greater than 0';
+    if (!newMember.member_username.trim()) localErrors.member_username = 'Member username is required';
+    if (!newMember.member_password) localErrors.member_password = 'Member password is required';
+    if (newMember.member_password !== (newMember.member_password_confirm || '')) localErrors.member_password_confirm = 'Passwords do not match';
+    if (Object.keys(localErrors).length) {
+      setFieldErrors((prev) => ({ ...prev, ...localErrors }));
+      setError('Fix highlighted member errors');
+      return;
+    }
     setMembers((prev) => [...prev, newMember]);
     setNewMember({
       member_name: '',
       designation: '',
       email: '',
       phone_number: '',
-      escalation_level: members.length + 2, // Increment default
+      escalation_level: members.length + 2, // Increment default (2, 3, ...)
       member_username: '',
       member_password: '',
+      member_password_confirm: '',
     });
     setError(null);
   };
@@ -93,6 +138,8 @@ export default function CreateClientPage() {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+    setFieldErrors({});
+    setSubmitting(true);
 
     // Basic validation
     if (clientData.client_id <= 0) {
@@ -103,12 +150,35 @@ export default function CreateClientPage() {
       setError('All client fields are required except payment cycle.');
       return;
     }
+    const errors: Record<string, string> = {};
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientData.client_username)) {
+      errors.client_username = 'Client username must be a valid email';
+    }
+    if ((clientData.client_password_confirm || '') !== clientData.client_password) {
+      errors.client_password_confirm = 'Passwords do not match';
+    }
+    for (const [index, m] of members.entries()) {
+      if (m.escalation_level <= 0) {
+        errors[`member_${index}_escalation_level`] = 'Escalation must be greater than 0';
+      }
+      if (m.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m.email)) {
+        errors[`member_${index}_email`] = 'Invalid email format';
+      }
+      if (m.phone_number && !/^\d{10}$/.test(m.phone_number)) {
+        errors[`member_${index}_phone_number`] = 'Phone must be 10 digits';
+      }
+    }
+    if (Object.keys(errors).length) {
+      setFieldErrors(errors);
+      setError('Fix highlighted errors');
+      return;
+    }
 
     try {
       const response = await fetch('/api/clients', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ client: clientData, members }),
+        body: JSON.stringify({ client: clientData, members: members.map(({ member_password_confirm, ...rest }) => rest) }),
       });
 
       if (!response.ok) {
@@ -117,10 +187,18 @@ export default function CreateClientPage() {
       }
 
       setSuccess('Client and members created successfully!');
-      // Optionally redirect or reset form
-      // router.push('/admin/clients');
+      try {
+        const { toast } = await import("@/hooks/use-toast");
+        toast({ title: 'Client Created', description: 'The client has been created successfully.' });
+      } catch {}
+      // Reset form
+      setClientData({ client_id: 0, client_username: '', client_password: '', client_password_confirm: '', name: '', start_date: '', payment_cycle: null });
+      setMembers([]);
+      setNewMember({ member_name: '', designation: '', email: '', phone_number: '', escalation_level: 1, member_username: '', member_password: '', member_password_confirm: '' });
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -144,6 +222,17 @@ export default function CreateClientPage() {
               className="border p-2"
               required
             />
+            <button
+              type="button"
+              onClick={() => checkClientIdAvailability(clientData.client_id)}
+              className="text-sm border px-2"
+              disabled={checkingClientId}
+            >
+              {checkingClientId ? 'Checking…' : 'Check ID'}
+            </button>
+            {clientIdAvailable === true && <span className="text-green-600 text-sm">Available</span>}
+            {clientIdAvailable === false && <span className="text-red-600 text-sm">Already exists</span>}
+            {fieldErrors.client_id && <span className="text-red-500 text-sm">{fieldErrors.client_id}</span>}
             <input
               type="text"
               name="client_username"
@@ -153,6 +242,7 @@ export default function CreateClientPage() {
               className="border p-2"
               required
             />
+            {fieldErrors.client_username && <span className="text-red-500 text-sm">{fieldErrors.client_username}</span>}
             <input
               type="password"
               name="client_password"
@@ -162,6 +252,16 @@ export default function CreateClientPage() {
               className="border p-2"
               required
             />
+            <input
+              type="password"
+              name="client_password_confirm"
+              placeholder="Confirm Client Password"
+              value={clientData.client_password_confirm}
+              onChange={handleClientChange}
+              className="border p-2"
+              required
+            />
+            {fieldErrors.client_password_confirm && <span className="text-red-500 text-sm">{fieldErrors.client_password_confirm}</span>}
             <input
               type="text"
               name="name"
@@ -222,6 +322,7 @@ export default function CreateClientPage() {
               onChange={handleNewMemberChange}
               className="border p-2"
             />
+            {fieldErrors.email && <span className="text-red-500 text-sm">{fieldErrors.email}</span>}
             <input
               type="text"
               name="phone_number"
@@ -230,6 +331,7 @@ export default function CreateClientPage() {
               onChange={handleNewMemberChange}
               className="border p-2"
             />
+            {fieldErrors.phone_number && <span className="text-red-500 text-sm">{fieldErrors.phone_number}</span>}
             <input
               type="number"
               name="escalation_level"
@@ -238,6 +340,7 @@ export default function CreateClientPage() {
               onChange={handleNewMemberChange}
               className="border p-2"
             />
+            {fieldErrors.escalation_level && <span className="text-red-500 text-sm">{fieldErrors.escalation_level}</span>}
             <input
               type="text"
               name="member_username"
@@ -246,6 +349,7 @@ export default function CreateClientPage() {
               onChange={handleNewMemberChange}
               className="border p-2"
             />
+            {fieldErrors.member_username && <span className="text-red-500 text-sm">{fieldErrors.member_username}</span>}
             <input
               type="password"
               name="member_password"
@@ -254,6 +358,15 @@ export default function CreateClientPage() {
               onChange={handleNewMemberChange}
               className="border p-2"
             />
+            <input
+              type="password"
+              name="member_password_confirm"
+              placeholder="Confirm Member Password"
+              value={newMember.member_password_confirm}
+              onChange={handleNewMemberChange}
+              className="border p-2"
+            />
+            {fieldErrors.member_password_confirm && <span className="text-red-500 text-sm">{fieldErrors.member_password_confirm}</span>}
           </div>
           <button type="button" onClick={addMember} className="bg-blue-500 text-white p-2 mb-4">
             Add Member
@@ -277,8 +390,8 @@ export default function CreateClientPage() {
           )}
         </div>
 
-        <button type="submit" className="bg-green-500 text-white p-2">
-          Create Client and Members
+        <button type="submit" className="bg-green-500 text-white p-2 disabled:opacity-60" disabled={submitting}>
+          {submitting ? 'Creating…' : 'Create Client and Members'}
         </button>
       </form>
     </div>

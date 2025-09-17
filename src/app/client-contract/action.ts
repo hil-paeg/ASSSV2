@@ -19,10 +19,15 @@ export async function getClients() {
 export async function createOrUpdateContract(formData: FormData) {
   const clientId = formData.get("client_id") as string;
   const allowed_tickets = Number(formData.get("allowed_tickets"));
+  const total_tickets_used = Number(formData.get("total_tickets_used"));
   const ticket_typeRS1 = Number(formData.get("ticket_typeRS1"));
+  const ticket_typeRS1_used = Number(formData.get("ticket_typeRS1_used"));
   const ticket_typeRS2 = Number(formData.get("ticket_typeRS2"));
+  const ticket_typeRS2_used = Number(formData.get("ticket_typeRS2_used"));
   const ticket_typeRS3_1 = Number(formData.get("ticket_typeRS3_1"));
+  const ticket_typeRS3_1_used = Number(formData.get("ticket_typeRS3_1_used"));
   const ticket_typeRS3_2 = Number(formData.get("ticket_typeRS3_2"));
+  const ticket_typeRS3_2_used = Number(formData.get("ticket_typeRS3_2_used"));
   const site_visit_frequency = Number(formData.get("site_visit_frequency"));
   const startDate = new Date(formData.get("site_visit_date") as string);
 
@@ -39,10 +44,15 @@ export async function createOrUpdateContract(formData: FormData) {
     where: { client_id: clientId },
     update: {
       allowed_tickets,
+      total_tickets_used,
       ticket_typeRS1,
+      ticket_typeRS1_used,
       ticket_typeRS2,
+      ticket_typeRS2_used,
       ticket_typeRS3_1,
+      ticket_typeRS3_1_used,
       ticket_typeRS3_2,
+      ticket_typeRS3_2_used,
       site_visit_frequency,
       siteVisits: {
         deleteMany: {}, // Clear old site visits
@@ -52,10 +62,15 @@ export async function createOrUpdateContract(formData: FormData) {
     create: {
       client_id: clientId,
       allowed_tickets,
+      total_tickets_used,
       ticket_typeRS1,
+      ticket_typeRS1_used,
       ticket_typeRS2,
+      ticket_typeRS2_used,
       ticket_typeRS3_1,
+      ticket_typeRS3_1_used,
       ticket_typeRS3_2,
+      ticket_typeRS3_2_used,
       site_visit_frequency,
       siteVisits: {
         create: siteVisitDates.map((date) => ({ date })),

@@ -6,8 +6,10 @@
 import { useState, useTransition, useEffect } from "react";
 
 import { getClients, createOrUpdateContract } from "../client-contract/action"; 
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Info } from "lucide-react";
 export default function ClientContractPage() {
-  const [clients, setClients] = useState<{ client_id: number; name: string }[]>([]);
+  const [clients, setClients] = useState<{ client_id: string; name: string }[]>([]);
   const [isPending, startTransition] = useTransition();
   const [success, setSuccess] = useState(false);
 
@@ -36,7 +38,7 @@ export default function ClientContractPage() {
           Form submitted successfully! Contract created/updated.
         </div>
       )}
-      <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-2xl shadow">
+      <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-2xl shadow">
         {/* Client dropdown */}
         <div>
           <label className="block text-sm font-medium">Select Client</label>
@@ -50,30 +52,89 @@ export default function ClientContractPage() {
           </select>
         </div>
 
-        {/* Tickets */}
-        <div>
-          <label className="block text-sm font-medium">Allowed Tickets</label>
-          <input type="number" name="allowed_tickets" required className="w-full border rounded-md p-2 mt-1" />
-        </div>
-
-        {/* Ticket Types */}
-        <div className="grid grid-cols-2 gap-4">
+        {/* Step 2: Contract Details - simplified stacked layout */}
+        <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium">Ticket Type RS1</label>
+            <label className="block text-sm font-medium">Total Tickets</label>
+            <input type="number" name="allowed_tickets" required className="w-full border rounded-md p-2 mt-1" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Total Tickets Used</label>
+            <input type="number" name="total_tickets_used" required className="w-full border rounded-md p-2 mt-1" />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium flex items-center gap-2">RS1 Tickets
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-gray-200 text-gray-700 cursor-default"><Info className="w-3 h-3" /></span>
+                  </TooltipTrigger>
+                  <TooltipContent>RS1 - Email assistance</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </label>
             <input type="number" name="ticket_typeRS1" required className="w-full border rounded-md p-2 mt-1" />
           </div>
           <div>
-            <label className="block text-sm font-medium">Ticket Type RS2</label>
+            <label className="block text-sm font-medium">RS1 Tickets Used</label>
+            <input type="number" name="ticket_typeRS1_used" required className="w-full border rounded-md p-2 mt-1" />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium flex items-center gap-2">RS2 Tickets
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-gray-200 text-gray-700 cursor-default"><Info className="w-3 h-3" /></span>
+                  </TooltipTrigger>
+                  <TooltipContent>RS2 - Equipment monitoring & System Maintenance</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </label>
             <input type="number" name="ticket_typeRS2" required className="w-full border rounded-md p-2 mt-1" />
           </div>
           <div>
-            <label className="block text-sm font-medium">Ticket Type RS3-1</label>
+            <label className="block text-sm font-medium">RS2 Tickets Used</label>
+            <input type="number" name="ticket_typeRS2_used" required className="w-full border rounded-md p-2 mt-1" />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium flex items-center gap-2">RS3-1 Tickets
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-gray-200 text-gray-700 cursor-default"><Info className="w-3 h-3" /></span>
+                  </TooltipTrigger>
+                  <TooltipContent>RS3-1 - Troubleshooting support & support</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </label>
             <input type="number" name="ticket_typeRS3_1" required className="w-full border rounded-md p-2 mt-1" />
           </div>
           <div>
-            <label className="block text-sm font-medium">Ticket Type RS3-2</label>
+            <label className="block text-sm font-medium">RS3-1 Tickets Used</label>
+            <input type="number" name="ticket_typeRS3_1_used" required className="w-full border rounded-md p-2 mt-1" />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium flex items-center gap-2">RS3-2 Tickets
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-gray-200 text-gray-700 cursor-default"><Info className="w-3 h-3" /></span>
+                  </TooltipTrigger>
+                  <TooltipContent>RS3-2 - Support service</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </label>
             <input type="number" name="ticket_typeRS3_2" required className="w-full border rounded-md p-2 mt-1" />
           </div>
+          <div>
+            <label className="block text-sm font-medium">RS3-2 Tickets Used</label>
+            <input type="number" name="ticket_typeRS3_2_used" required className="w-full border rounded-md p-2 mt-1" />
+          </div>
+
           <div>
             <label className="block text-sm font-medium">Site visit Frequency</label>
             <input type="number" name="site_visit_frequency" required className="w-full border rounded-md p-2 mt-1" />
