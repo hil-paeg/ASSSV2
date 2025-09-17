@@ -17,8 +17,8 @@ model Client {
   start_date      DateTime
   payment_cycle   String?   // Monthly, Quarterly, Yearly
   email           String?
-  resetToken      String?   // Add this field for password reset functionality
-  resetTokenExpiry DateTime? // Optional: Add expiry for reset tokens
+  resetToken      String?   
+  resetTokenExpiry DateTime? 
   
   members   ClientMember[]
   tickets   Ticket[]

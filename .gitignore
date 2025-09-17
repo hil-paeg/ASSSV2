@@ -28,7 +28,7 @@ lerna-debug.log*
 
 # Env files
 .env
-.env.*.local
+.env.local
 
 # Editor settings
 .vscode/*

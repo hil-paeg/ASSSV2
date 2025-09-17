@@ -24,10 +24,10 @@ export async function GET(req: NextRequest, { params }: { params: { clientId: st
       return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 403 });
     }
 
-    const clientId = parseInt(params.clientId, 10);
-    if (isNaN(clientId)) {
-      return NextResponse.json({ error: 'Invalid client ID' }, { status: 400 });
-    }
+    const clientId = params.clientId;
+    // if (isNaN(clientId)) {
+    //   return NextResponse.json({ error: 'Invalid client ID' }, { status: 400 });
+    // }
 
     // Fetch client with related data
     const client = await prisma.client.findUnique({
@@ -43,9 +43,9 @@ export async function GET(req: NextRequest, { params }: { params: { clientId: st
             closed_at: true,
           },
           orderBy: { created_at: 'desc' },
-          take: 3, // Limit to 3 recent tickets
+          take: 3, 
         },
-        contracts: { // Changed from 'contractualTickets' to 'contracts'
+        contracts: { 
           select: {
             allowed_tickets: true,
             total_tickets_used: true,

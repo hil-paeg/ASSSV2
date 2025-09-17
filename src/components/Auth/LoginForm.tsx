@@ -303,14 +303,6 @@ const LoginForm: React.FC = () => {
                 <div className="text-center">
                   <button
                     type="button"
-                    onClick={() => setShowRegister(true)}
-                    className="text-sm text-blue-600 hover:text-blue-800 flex items-center justify-center gap-1 mx-auto"
-                  >
-                    <UserPlus className="h-3 w-3" />
-                    New client? Contact Admin
-                  </button>
-                  <button
-                    type="button"
                     onClick={() => setShowRegister(false)}
                     className="text-sm text-blue-600 hover:text-blue-800 mt-2"
                   >
@@ -318,31 +310,7 @@ const LoginForm: React.FC = () => {
                   </button>
                 </div>
               </form>
-              {!showRegister && (
-                <form onSubmit={handleForgotPassword} className="mt-4 space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="forgot-email">Email</Label>
-                    <Input
-                      id="forgot-email"
-                      type="email"
-                      placeholder="Enter your registered email"
-                      value={forgotEmail}
-                      onChange={(e) => setForgotEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={isSendingReset}>
-                    {isSendingReset ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Sending Reset Email...
-                      </>
-                    ) : (
-                      'Send Reset Email'
-                    )}
-                  </Button>
-                </form>
-              )}
+             
             </TabsContent>
 
             <TabsContent value="admin" className="mt-6">
@@ -384,11 +352,7 @@ const LoginForm: React.FC = () => {
           </Tabs>
         </CardContent>
 
-        <CardFooter className="text-center">
-          <div className="text-sm text-gray-500">
-            <p>Contact admin for credentials.</p>
-          </div>
-        </CardFooter>
+
       </Card>
     </div>
   );

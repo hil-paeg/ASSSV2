@@ -116,7 +116,7 @@ const EscalationPyramid = () => {
     {
       level: 3,
       name: "Rajesh Kadu",
-      designation: "DGM P&S",
+      designation: "DGM ",
       email: "rajesh.kadu@company.com",
       phone: "+91 98765 43212",
       color: "from-red-50 to-red-100",

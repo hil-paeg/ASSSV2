@@ -222,7 +222,7 @@ export async function POST(request: NextRequest) {
 
     if (userRole === 'client') {
       user = await prisma.client.findUnique({
-        where: { client_id: Number(userId) },
+        where: { client_id: String(userId) },
       });
     } else if (userRole === 'admin') {
       user = await prisma.admin.findUnique({
@@ -271,7 +271,7 @@ export async function POST(request: NextRequest) {
     // Update password
    if (userRole === 'client') {
   await prisma.client.update({
-    where: { client_id: Number(userId) },
+    where: { client_id: String(userId) },
     data: { client_password: hashedPassword },
   });
 } else if (userRole === 'admin') {

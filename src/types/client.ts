@@ -1,6 +1,6 @@
 
 export interface ClientFormData {
-  client_id: number;
+  client_id: string;
   client_username: string;
   client_password?: string;
   name: string;
@@ -10,7 +10,7 @@ export interface ClientFormData {
 
 export interface MemberFormData {
   member_id?: number;
-  client_id?: number;
+  client_id?: string;
   member_name: string;
   designation: string;
   email: string;
@@ -21,7 +21,7 @@ export interface MemberFormData {
 }
 
 export interface ContractFormData {
-  client_id: number;
+  client_id: string;
   allowed_tickets: number;
   total_tickets_used: number;
   ticket_typeRS1: number;

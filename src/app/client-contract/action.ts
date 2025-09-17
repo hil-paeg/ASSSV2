@@ -17,7 +17,7 @@ export async function getClients() {
 
 // ✅ Server action to create or update the contract (posts data to PostgreSQL via Prisma)
 export async function createOrUpdateContract(formData: FormData) {
-  const clientId = Number(formData.get("client_id"));
+  const clientId = formData.get("client_id") as string;
   const allowed_tickets = Number(formData.get("allowed_tickets"));
   const ticket_typeRS1 = Number(formData.get("ticket_typeRS1"));
   const ticket_typeRS2 = Number(formData.get("ticket_typeRS2"));

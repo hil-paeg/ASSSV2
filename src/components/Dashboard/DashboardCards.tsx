@@ -1,199 +1,11 @@
-// 'use client';
-
-// import React, { useEffect, useState } from 'react';
-// import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-// import { Ticket, Clock, CheckCircle, AlertCircle, Tag } from 'lucide-react';
-// import { useAuth } from '@/contexts/AuthContext';
-// import { getClientContractInfo, getTicketStats } from '@/app/dashboard/actions';
-
-// interface ContractInfo {
-//   client: {
-//     name: string;
-//     startDate: Date;
-//   };
-//   contract: {
-//     allowed_tickets: number;
-//     total_tickets_used: number;
-//     ticket_typeRS1: number;
-//     ticket_typeRS1_used: number;
-//     ticket_typeRS2: number;
-//     ticket_typeRS2_used: number;
-//     ticket_typeRS3_1: number;
-//     ticket_typeRS3_1_used: number;
-//     ticket_typeRS3_2: number;
-//     ticket_typeRS3_2_used: number;
-//   } | null;
-//   endDate: Date | null;
-//   daysRemaining: number;
-//   nextSiteVisitDate: Date | null;
-// }
-
-// const DashboardCards: React.FC = () => {
-//   const { user } = useAuth();
-//   const [contractInfo, setContractInfo] = useState<ContractInfo | null>(null);
-//   const [pendingTickets, setPendingTickets] = useState<number>(0);
-//   const [highPriorityTickets, setHighPriorityTickets] = useState<number>(0);
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState<string | null>(null);
-
-//   useEffect(() => {
-//     const fetchData = async () => {
-//       if (!user?.clientId) {
-//         setError('No client ID available');
-//         setLoading(false);
-//         return;
-//       }
-//       try {
-//         const [contractData, ticketStats] = await Promise.all([
-//           getClientContractInfo(user.clientId),
-//           getTicketStats(user.clientId),
-//         ]);
-//         setContractInfo(contractData);
-//         setPendingTickets(ticketStats.pendingTickets);
-//         setHighPriorityTickets(ticketStats.highPriorityTickets);
-//         setLoading(false);
-//       } catch (err) {
-//         console.error('fetchData Error:', err);
-//         setError('Failed to load dashboard data');
-//         setLoading(false);
-//       }
-//     };
-//     fetchData();
-//   }, [user?.clientId]);
-
-//   if (loading) {
-//     return <div>Loading dashboard...</div>;
-//   }
-
-//   if (error || !contractInfo || !contractInfo.contract) {
-//     return <div>{error || 'No contract found for this client'}</div>;
-//   }
-
-//   const cards = [
-//     {
-//       title: 'Tickets Remaining',
-//       value: contractInfo.contract.allowed_tickets - contractInfo.contract.total_tickets_used,
-//       icon: Ticket,
-//       color: 'text-blue-600',
-//       bgColor: 'bg-blue-50',
-//       display: (
-//         <span className="text-3xl font-bold">
-//           {contractInfo.contract.allowed_tickets - contractInfo.contract.total_tickets_used}
-//         </span>
-//       ),
-//     },
-//     {
-//       title: 'Tickets Used',
-//       value: contractInfo.contract.total_tickets_used,
-//       icon: CheckCircle,
-//       color: 'text-green-600',
-//       bgColor: 'bg-green-50',
-//       display: (
-//         <span className="text-3xl font-bold">
-//           {contractInfo.contract.total_tickets_used}
-//         </span>
-//       ),
-//     },
-//     {
-//       title: 'Pending Tickets',
-//       value: pendingTickets,
-//       icon: Clock,
-//       color: 'text-yellow-600',
-//       bgColor: 'bg-yellow-50',
-//       display: <span className="text-3xl font-bold">{pendingTickets}</span>,
-//     },
-//     {
-//       title: 'High Priority',
-//       value: highPriorityTickets,
-//       icon: AlertCircle,
-//       color: 'text-red-600',
-//       bgColor: 'bg-red-50',
-//       display: <span className="text-3xl font-bold">{highPriorityTickets}</span>,
-//     },
-//     {
-//       title: 'RS1 Tickets',
-//       value: contractInfo.contract.ticket_typeRS1_used,
-//       icon: Tag,
-//       color: 'text-indigo-600',
-//       bgColor: 'bg-indigo-50',
-//       display: (
-//         <div className="text-3xl font-bold flex items-baseline gap-1">
-//           <span>{contractInfo.contract.ticket_typeRS1_used}</span>
-//           <span className="text-base text-gray-500">/ {contractInfo.contract.ticket_typeRS1}</span>
-//         </div>
-//       ),
-//     },
-//     {
-//       title: 'RS2 Tickets',
-//       value: contractInfo.contract.ticket_typeRS2_used,
-//       icon: Tag,
-//       color: 'text-purple-600',
-//       bgColor: 'bg-purple-50',
-//       display: (
-//         <div className="text-3xl font-bold flex items-baseline gap-1">
-//           <span>{contractInfo.contract.ticket_typeRS2_used}</span>
-//           <span className="text-base text-gray-500">/ {contractInfo.contract.ticket_typeRS2}</span>
-//         </div>
-//       ),
-//     },
-//     {
-//       title: 'RS 3-1 Tickets',
-//       value: contractInfo.contract.ticket_typeRS3_1_used,
-//       icon: Tag,
-//       color: 'text-pink-600',
-//       bgColor: 'bg-pink-50',
-//       display: (
-//         <div className="text-3xl font-bold flex items-baseline gap-1">
-//           <span>{contractInfo.contract.ticket_typeRS3_1_used}</span>
-//           <span className="text-base text-gray-500">/ {contractInfo.contract.ticket_typeRS3_1}</span>
-//         </div>
-//       ),
-//     },
-//     {
-//       title: 'RS 3-2 Tickets',
-//       value: contractInfo.contract.ticket_typeRS3_2_used,
-//       icon: Tag,
-//       color: 'text-teal-600',
-//       bgColor: 'bg-teal-50',
-//       display: (
-//         <div className="text-3xl font-bold flex items-baseline gap-1">
-//           <span>{contractInfo.contract.ticket_typeRS3_2_used}</span>
-//           <span className="text-base text-gray-500">/ {contractInfo.contract.ticket_typeRS3_2}</span>
-//         </div>
-//       ),
-//     },
-//   ];
-
-//   return (
-//     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-//       {cards.map((card, index) => (
-//         <Card key={index} className="hover:shadow-lg transition-shadow duration-200">
-//           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-//             <CardTitle className="text-sm font-medium text-gray-600">{card.title}</CardTitle>
-//             <div className={`p-2 rounded-lg ${card.bgColor}`}>
-//               <card.icon className={`h-5 w-5 ${card.color}`} />
-//             </div>
-//           </CardHeader>
-//           <CardContent>{card.display}</CardContent>
-//         </Card>
-//       ))}
-//     </div>
-//   );
-// };
-
-// export default DashboardCards;
-
-
-
-
-
 'use client';
 
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Ticket, Clock, CheckCircle, AlertCircle, Tag, TrendingUp, Calendar, Target } from 'lucide-react';
+import { Ticket, Clock, CheckCircle, AlertCircle, Tag, TrendingUp, Calendar, Target, Info } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getClientContractInfo, getTicketStats } from '@/app/dashboard/actions';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@radix-ui/react-tooltip';
 
 interface ContractInfo {
   client: {
@@ -217,7 +29,6 @@ interface ContractInfo {
   nextSiteVisitDate: Date | null;
 }
 
-// Mini Progress Ring Component
 const ProgressRing: React.FC<{ percentage: number; size?: number; strokeWidth?: number; color?: string }> = ({ 
   percentage, 
   size = 60, 
@@ -266,7 +77,6 @@ const ProgressRing: React.FC<{ percentage: number; size?: number; strokeWidth?: 
   );
 };
 
-// Mini Bar Chart Component
 const MiniBarChart: React.FC<{ used: number; total: number; color: string }> = ({ used, total, color }) => {
   const percentage = total > 0 ? (used / total) * 100 : 0;
   
@@ -295,7 +105,6 @@ const MiniBarChart: React.FC<{ used: number; total: number; color: string }> = (
   );
 };
 
-// Status Indicator Component
 const StatusIndicator: React.FC<{ value: number; threshold?: number; type?: 'warning' | 'danger' | 'success' }> = ({ 
   value, 
   threshold = 5,
@@ -381,6 +190,13 @@ const DashboardCards: React.FC = () => {
 
   const ticketsRemaining = contractInfo.contract.allowed_tickets - contractInfo.contract.total_tickets_used;
   const usagePercentage = (contractInfo.contract.total_tickets_used / contractInfo.contract.allowed_tickets) * 100;
+
+  const tooltipContent: { [key: string]: string } = {
+    'RS1 Support': 'Email assistance',
+    'RS2 Support': 'Equipment monitoring & System Maintenance',
+    'RS3-1 Support': 'Troubleshooting support & support',
+    'RS3-2 Support': 'Support service',
+  };
 
   const cards = [
     {
@@ -607,29 +423,45 @@ const DashboardCards: React.FC = () => {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {cards.map((card, index) => (
-        <Card 
-          key={index} 
-          className={`hover:shadow-xl transition-all duration-300 border-l-4 ${card.borderColor} bg-gradient-to-br from-white to-gray-50/30 hover:scale-[1.02]`}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <div className="space-y-1">
-              <CardTitle className=" font-semibold text-gray-700">{card.title}</CardTitle>
-              {card.subtitle && (
-                <p className="text-xs text-gray-500">{card.subtitle}</p>
-              )}
-            </div>
-            <div className={`p-3 rounded-xl ${card.bgColor} shadow-sm`}>
-              <card.icon className={`h-5 w-5 ${card.color}`} />
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            {card.display}
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+    <TooltipProvider>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {cards.map((card, index) => (
+          <Card 
+            key={index} 
+            className={`hover:shadow-xl hover:cursor-pointer transition-all duration-300 border-l-4 ${card.borderColor} bg-gradient-to-br from-white to-gray-50/30 hover:scale-[1.02]`}
+          >
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <div className="space-y-1">
+                {tooltipContent[card.title] ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center space-x-2">
+                        <Info className="h-4 w-4 text-gray-500" />
+                        <CardTitle className="font-semibold text-gray-700">{card.title}</CardTitle>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent className="bg-gray-800 text-white text-xs p-2 rounded shadow-lg">
+                      {tooltipContent[card.title]}
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <CardTitle className="font-semibold text-gray-700">{card.title}</CardTitle>
+                )}
+                {card.subtitle && (
+                  <p className="text-xs text-gray-500">{card.subtitle}</p>
+                )}
+              </div>
+              <div className={`p-3 rounded-xl ${card.bgColor} shadow-sm`}>
+                <card.icon className={`h-5 w-5 ${card.color}`} />
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              {card.display}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </TooltipProvider>
   );
 };
 
