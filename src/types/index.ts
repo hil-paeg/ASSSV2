@@ -72,39 +72,69 @@ export interface AdminFormErrors {
 }
 
 
+// export interface Ticket {
+//   id: number;
+//   ticket_id: number;
+//   userId: number;
+//   client_id: string;  // Changed to string
+//   title: string;
+//   issue_title: string;
+//   issue_category: string | null;  // Added
+//   issue_subcategory: string | null;  // Added
+//   priority: string | null;
+//   description: string | null;
+//   location: string | null;
+//   actions_performed: string | null;
+//   attachments: string | null;
+//   creator_name: string | null;
+//   status: "raised" | "in-progress" | "confirmed by oem" | "resolved" | "closed";
+//   timeline: TimelineEvent[] | null;
+//   comments: string | null;
+//   ticketType: string | null;
+//   ticket_type: string | null;
+//   createdAt: string;
+//   created_at: string;
+//   updatedAt: string;
+//   updated_at: string;
+//   closed_at: string | null;
+//   summary: string | null;
+//   out_of_scope: boolean;
+//   clientClosed: boolean;
+//   adminClosed: boolean;
+//   feedback: string | null;
+//   out_of_scope_reason: string | null;
+//   client?: { client_username: string };
+//   close_ticket?: CloseTicket;
+// }
+
+
 export interface Ticket {
-  id: number;
   ticket_id: number;
-  userId: number;
-  client_id: string;  // Changed to string
-  title: string;
+  client_id: string;
   issue_title: string;
-  issue_category: string | null;  // Added
-  issue_subcategory: string | null;  // Added
-  priority: string | null;
-  description: string | null;
-  location: string | null;
-  actions_performed: string | null;
-  attachments: string | null;
-  creator_name: string | null;
-  status: "raised" | "in-progress" | "confirmed by oem" | "resolved" | "closed";
-  timeline: TimelineEvent[] | null;
-  comments: string | null;
-  ticketType: string | null;
-  ticket_type: string | null;
-  createdAt: string;
+  issue_category?: string | null;
+  issue_subcategory?: string | null;
+  priority?: string | null;
+  description?: string | null;
+  location?: string | null;
+  actions_performed?: string | null;
+  attachments?: string | null;
+  creator_name?: string | null;
+  status: string;
+  timeline?: { time: string; description: string }[];
+  comments?: string | null;
+  ticket_type?: string | null;
   created_at: string;
-  updatedAt: string;
   updated_at: string;
-  closed_at: string | null;
-  summary: string | null;
+  closed_at?: string | null;
+  summary?: string | null;
   out_of_scope: boolean;
   clientClosed: boolean;
   adminClosed: boolean;
-  feedback: string | null;
-  out_of_scope_reason: string | null;
-  client?: { client_username: string };
-  close_ticket?: CloseTicket;
+  out_of_scope_reason?: string | null;
+  client?: {
+    client_username: string;
+  };
 }
 export interface KnowledgeDoc {
   id: string;

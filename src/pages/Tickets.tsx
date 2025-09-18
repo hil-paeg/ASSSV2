@@ -1,3 +1,4 @@
+
 // "use client"
 
 // import { useState, useEffect } from "react"
@@ -20,8 +21,9 @@
 //   XCircle,
 //   Clock,
 //   BarChart3,
+//   Loader2,
 // } from "lucide-react"
-// import { FileText, PlayCircle, Shield, CheckCircle, CloudIcon as ClosedIcon } from "lucide-react"
+// import { FileText, Shield, CheckCircle, CloudIcon as ClosedIcon } from "lucide-react"
 // import { useAuth } from "@/contexts/AuthContext"
 // import { Badge } from "@/components/ui/badge"
 // import { StatusTracker } from "@/components/Tickets/StatusTracker"
@@ -36,6 +38,14 @@
 //   timeAmount: string
 // }
 
+// interface Client {
+//   client_id: number
+//   client_username: string
+//   name: string
+// }
+
+// type TicketStatus = "raised" | "confirmed by oem" | "resolved" | "closed"
+
 // const Tickets = () => {
 //   const { user } = useAuth()
 //   const router = useRouter()
@@ -43,6 +53,7 @@
 //   const [statusFilter, setStatusFilter] = useState("all")
 //   const [clientFilter, setClientFilter] = useState("all")
 //   const [tickets, setTickets] = useState<Ticket[]>([])
+//   const [clients, setClients] = useState<Client[]>([])
 //   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false)
 //   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false)
 //   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false)
@@ -60,21 +71,39 @@
 //   const [adminAttachment, setAdminAttachment] = useState<File | null>(null)
 //   const [adminOutOfScope, setAdminOutOfScope] = useState(false)
 //   const [adminOutOfScopeReason, setAdminOutOfScopeReason] = useState("")
+//   const [isLoading, setIsLoading] = useState({
+//     updateStatus: false,
+//     feedbackSubmit: false,
+//     adminSummarySubmit: false,
+//     clients: false,
+//   })
 
 //   const getStatusIcon = (status: string) => {
+//     const iconClass = "h-4 w-4 bg-emerald-500 rounded-full p-0.5 text-white"
 //     switch (status) {
 //       case "raised":
-//         return <FileText className="h-4 w-4" />
-//       case "in-progress":
-//         return <PlayCircle className="h-4 w-4" />
+//         return <FileText className={iconClass} />
 //       case "confirmed by oem":
-//         return <Shield className="h-4 w-4" />
+//         return <Shield className={iconClass} />
 //       case "resolved":
-//         return <CheckCircle className="h-4 w-4" />
+//         return <CheckCircle className={iconClass} />
 //       case "closed":
-//         return <ClosedIcon className="h-4 w-4" />
+//         return <ClosedIcon className={iconClass} />
 //       default:
-//         return <FileText className="h-4 w-4" />
+//         return <FileText className={iconClass} />
+//     }
+//   }
+
+//   const getNextStatusText = (currentStatus: string) => {
+//     switch (currentStatus) {
+//       case "raised":
+//         return "Update to Confirmed by OEM"
+//       case "confirmed by oem":
+//         return "Update to Resolved"
+//       case "resolved":
+//         return "Update to Closed"
+//       default:
+//         return "Update Status"
 //     }
 //   }
 
@@ -92,27 +121,28 @@
 //           headers: { Authorization: `Bearer ${user.token}` },
 //         })
 //         console.log("Fetched tickets:", response.data)
-//         setTickets(
-//           response.data.map((ticket: any) => ({
-//             ...ticket,
-//             id: ticket.ticket_id,
-//             ticket_id: ticket.ticket_id,
-//             userId: ticket.client_id,
-//             client_id: ticket.client_id,
-//             title: ticket.issue_title,
-//             issue_title: ticket.issue_title,
-//             ticketType: ticket.ticket_type,
-//             ticket_type: ticket.ticket_type,
-//             createdAt: ticket.created_at ? new Date(ticket.created_at).toISOString() : new Date().toISOString(),
-//             created_at: ticket.created_at ? new Date(ticket.created_at).toISOString() : new Date().toISOString(),
-//             updatedAt: ticket.updated_at ? new Date(ticket.updated_at).toISOString() : new Date().toISOString(),
-//             updated_at: ticket.updated_at ? new Date(ticket.updated_at).toISOString() : new Date().toISOString(),
-//             closed_at: ticket.closed_at ? new Date(ticket.closed_at).toISOString() : null,
-//             clientClosed: Boolean(ticket.clientClosed),
-//             adminClosed: Boolean(ticket.adminClosed),
-//             out_of_scope: Boolean(ticket.out_of_scope),
-//           })),
-//         )
+//         const mappedTickets = response.data.map((ticket: any) => ({
+//           ...ticket,
+//           id: ticket.ticket_id,
+//           ticket_id: ticket.ticket_id,
+//           userId: ticket.client_id,
+//           client_id: ticket.client_id,
+//           title: ticket.issue_title,
+//           issue_title: ticket.issue_title,
+//           ticketType: ticket.ticket_type,
+//           ticket_type: ticket.ticket_type,
+//           createdAt: ticket.created_at ? new Date(ticket.created_at).toISOString() : new Date().toISOString(),
+//           created_at: ticket.created_at ? new Date(ticket.created_at).toISOString() : new Date().toISOString(),
+//           updatedAt: ticket.updated_at ? new Date(ticket.updated_at).toISOString() : new Date().toISOString(),
+//           updated_at: ticket.updated_at ? new Date(ticket.updated_at).toISOString() : new Date().toISOString(),
+//           closed_at: ticket.closed_at ? new Date(ticket.closed_at).toISOString() : null,
+//           clientClosed: Boolean(ticket.clientClosed),
+//           adminClosed: Boolean(ticket.adminClosed),
+//           out_of_scope: Boolean(ticket.out_of_scope),
+//         }))
+//         setTickets(mappedTickets.sort((a: Ticket, b: Ticket) => 
+//           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+//         ))
 //       } catch (error) {
 //         console.error("Error fetching tickets:", error)
 //         alert("Failed to fetch tickets.")
@@ -120,7 +150,29 @@
 //       }
 //     }
 
+//     const fetchClients = async () => {
+//       if (user?.role !== "admin" || !user?.token) return
+
+//       setIsLoading((prev) => ({ ...prev, clients: true }))
+//       try {
+//         const response = await axios.get("/api/clients", {
+//           headers: { Authorization: `Bearer ${user.token}` },
+//         })
+//         setClients(response.data.map((client: any) => ({
+//           client_id: client.client_id,
+//           client_username: client.client_username,
+//           name: client.name,
+//         })))
+//       } catch (error) {
+//         console.error("Error fetching clients:", error)
+//         alert("Failed to fetch clients.")
+//       } finally {
+//         setIsLoading((prev) => ({ ...prev, clients: false }))
+//       }
+//     }
+
 //     fetchTickets()
+//     fetchClients()
 //   }, [user, router])
 
 //   const getPriorityColor = (priority: string | null) => {
@@ -165,8 +217,8 @@
 
 //   const handleCloseTicket = async (ticket: Ticket, role: "admin" | "client" | "clientMember") => {
 //     if (role === "admin") {
-//       if (!ticket.clientClosed) {
-//         alert("Cannot close ticket: Client must close the ticket first.")
+//       if (ticket.status !== "confirmed by oem" && ticket.status !== "resolved" && ticket.status !== "closed") {
+//         alert("Cannot close ticket: Ticket must be at least in 'confirmed by oem' stage.")
 //         return
 //       }
 //       setUpdateTicket(ticket)
@@ -176,6 +228,10 @@
 //       setAdminOutOfScopeReason(ticket.out_of_scope_reason || "")
 //       setIsAdminSummaryModalOpen(true)
 //     } else {
+//       if (ticket.out_of_scope) {
+//         alert("Cannot close ticket: Ticket is marked out of scope and can only be closed by admin.")
+//         return
+//       }
 //       if (ticket.status !== "resolved") {
 //         alert("Cannot close ticket: Ticket must be resolved first.")
 //         return
@@ -189,14 +245,14 @@
 //   const handleStatusUpdate = async () => {
 //     if (!updateTicket || !user?.token) return
 
-//     // Enforce ticket_type for 'confirmed by oem' status
 //     if (updateTicket.status === "raised" && !ticketType) {
 //       alert("Please select a ticket type before confirming.")
 //       return
 //     }
 
+//     setIsLoading((prev) => ({ ...prev, updateStatus: true }))
 //     try {
-//       const newStatus =
+//       const newStatus: TicketStatus =
 //         updateTicket.status === "raised"
 //           ? "confirmed by oem"
 //           : updateTicket.status === "confirmed by oem"
@@ -222,7 +278,7 @@
 //                 updatedAt: new Date().toISOString(),
 //               }
 //             : t,
-//         ),
+//         ).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 //       )
 //       setIsUpdateModalOpen(false)
 //       setComments("")
@@ -230,12 +286,15 @@
 //     } catch (error) {
 //       console.error("Error updating ticket:", error)
 //       alert("Failed to update ticket status.")
+//     } finally {
+//       setIsLoading((prev) => ({ ...prev, updateStatus: false }))
 //     }
 //   }
 
 //   const handleAdminSummarySubmit = async () => {
 //     if (!updateTicket || !user?.token || !adminSummary.trim()) return
 
+//     setIsLoading((prev) => ({ ...prev, adminSummarySubmit: true }))
 //     try {
 //       const formData = new FormData()
 //       formData.append("summary", adminSummary)
@@ -261,13 +320,13 @@
 //                   : t.attachments,
 //                 out_of_scope: adminOutOfScope,
 //                 out_of_scope_reason: adminOutOfScope ? adminOutOfScopeReason : null,
-//                 status: t.clientClosed ? "closed" : t.status,
+//                 status: t.clientClosed && !adminOutOfScope ? "closed" : t.status as TicketStatus,
 //                 updated_at: new Date().toISOString(),
 //                 updatedAt: new Date().toISOString(),
-//                 closed_at: new Date().toISOString(),
+//                 closed_at: t.clientClosed && !adminOutOfScope ? new Date().toISOString() : t.closed_at,
 //               }
 //             : t,
-//         ),
+//         ).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 //       )
 //       setIsAdminSummaryModalOpen(false)
 //       setAdminSummary("")
@@ -277,12 +336,15 @@
 //     } catch (error) {
 //       console.error("Error closing ticket:", error)
 //       alert("Failed to close ticket.")
+//     } finally {
+//       setIsLoading((prev) => ({ ...prev, adminSummarySubmit: false }))
 //     }
 //   }
 
 //   const handleFeedbackSubmit = async () => {
 //     if (!updateTicket || !user?.token || !feedback.experience.trim() || feedback.rating === 0) return
 
+//     setIsLoading((prev) => ({ ...prev, feedbackSubmit: true }))
 //     try {
 //       const response = await axios.post(
 //         `/api/tickets?action=close&id=${updateTicket.ticket_id}`,
@@ -299,19 +361,21 @@
 //             ? {
 //                 ...t,
 //                 clientClosed: true,
-//                 status: t.adminClosed ? "closed" : t.status,
+//                 status: t.adminClosed && !t.out_of_scope ? "closed" : t.status as TicketStatus,
 //                 updated_at: new Date().toISOString(),
 //                 updatedAt: new Date().toISOString(),
-//                 closed_at: t.adminClosed ? new Date().toISOString() : t.closed_at,
+//                 closed_at: t.adminClosed && !t.out_of_scope ? new Date().toISOString() : t.closed_at,
 //               }
 //             : t,
-//         ),
+//         ).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 //       )
 //       setIsFeedbackModalOpen(false)
 //       setFeedback({ experience: "", rating: 0, timeAmount: "" })
 //     } catch (error) {
 //       console.error("Error submitting feedback:", error)
 //       alert("Failed to submit feedback.")
+//     } finally {
+//       setIsLoading((prev) => ({ ...prev, feedbackSubmit: false }))
 //     }
 //   }
 
@@ -324,109 +388,102 @@
 //     return matchesSearch && matchesStatus && matchesClient
 //   })
 
-  
 //   const totalTickets = tickets.length
 //   const closedTickets = tickets.filter((t) => t.status === "closed").length
 //   const resolvedTickets = tickets.filter((t) => t.status === "resolved").length
-//   const openTickets = totalTickets - closedTickets 
+//   const openTickets = totalTickets - closedTickets
 //   const inProgressTickets = tickets.filter((t) => t.status === "confirmed by oem").length
 
 //   return (
 //     <div className="min-h-screen bg-gray-50">
-//      <div className="container mx-auto p-6 space-y-6">
-//   <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-//     <div className="p-6 space-y-6">
-      
-//       {/* Header Section */}
-//       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-//         <div className="space-y-2">
-//           <div className="flex items-center gap-3">
-//             <div className="p-2 bg-blue-600 rounded-lg">
-//               <BarChart3 className="h-6 w-6 text-white" />
+//       <div className="container mx-auto p-6 space-y-6">
+//         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+//           <div className="p-6 space-y-6">
+//             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+//               <div className="space-y-2">
+//                 <div className="flex items-center gap-3">
+//                   <div className="p-2 bg-blue-600 rounded-lg">
+//                     <BarChart3 className="h-6 w-6 text-white" />
+//                   </div>
+//                   <div>
+//                     <h1 className="text-2xl font-semibold text-gray-900">
+//                       {user?.role === "admin" ? "Ticket Management" : "My Support Center"}
+//                     </h1>
+//                     <p className="text-gray-600">
+//                       {user?.role === "admin"
+//                         ? "Monitor and manage all support requests"
+//                         : "Track your support requests and their progress"}
+//                     </p>
+//                   </div>
+//                 </div>
+//               </div>
+
+//               {(user?.role === "client" || user?.role === "clientMember") && (
+//                 <Button
+//                   onClick={() => router.push("/tickets/new")}
+//                   className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
+//                 >
+//                   <Plus className="h-4 w-4 mr-2" />
+//                   Create New Ticket
+//                 </Button>
+//               )}
 //             </div>
-//             <div>
-//               <h1 className="text-2xl font-semibold text-gray-900">
-//                 {user?.role === "admin" ? "Ticket Management" : "My Support Center"}
-//               </h1>
-//               <p className="text-gray-600">
-//                 {user?.role === "admin"
-//                   ? "Monitor and manage all support requests"
-//                   : "Track your support requests and their progress"}
-//               </p>
+
+//             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+//               <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 shadow-sm hover:shadow-md transition-all duration-200">
+//                 <CardHeader className="flex flex-row items-center justify-between pb-2">
+//                   <CardTitle className="text-sm font-medium text-blue-700">Total Tickets</CardTitle>
+//                   <div className="p-2 bg-blue-500 rounded-lg">
+//                     <Activity className="h-4 w-4 text-white" />
+//                   </div>
+//                 </CardHeader>
+//                 <CardContent>
+//                   <div className="text-2xl font-semibold text-blue-900">{totalTickets}</div>
+//                   <p className="text-xs text-blue-600 mt-1">All time</p>
+//                 </CardContent>
+//               </Card>
+
+//               <Card className="bg-gradient-to-br from-amber-50 to-orange-100 border border-orange-200 shadow-sm hover:shadow-md transition-all duration-200">
+//                 <CardHeader className="flex flex-row items-center justify-between pb-2">
+//                   <CardTitle className="text-sm font-medium text-orange-700">Open Tickets</CardTitle>
+//                   <div className="p-2 bg-orange-500 rounded-lg">
+//                     <AlertCircle className="h-4 w-4 text-white" />
+//                   </div>
+//                 </CardHeader>
+//                 <CardContent>
+//                   <div className="text-2xl font-semibold text-orange-900">{openTickets}</div>
+//                   <p className="text-xs text-orange-600 mt-1">Pending resolution</p>
+//                 </CardContent>
+//               </Card>
+
+//               <Card className="bg-gradient-to-br from-emerald-50 to-green-100 border border-green-200 shadow-sm hover:shadow-md transition-all duration-200">
+//                 <CardHeader className="flex flex-row items-center justify-between pb-2">
+//                   <CardTitle className="text-sm font-medium text-green-700">Resolved</CardTitle>
+//                   <div className="p-2 bg-green-500 rounded-lg">
+//                     <CheckCircle2 className="h-4 w-4 text-white" />
+//                   </div>
+//                 </CardHeader>
+//                 <CardContent>
+//                   <div className="text-2xl font-semibold text-green-900">{resolvedTickets}</div>
+//                   <p className="text-xs text-green-600 mt-1">Ready to close</p>
+//                 </CardContent>
+//               </Card>
+
+//               <Card className="bg-gradient-to-br from-slate-50 to-gray-100 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200">
+//                 <CardHeader className="flex flex-row items-center justify-between pb-2">
+//                   <CardTitle className="text-sm font-medium text-gray-700">Closed</CardTitle>
+//                   <div className="p-2 bg-gray-500 rounded-lg">
+//                     <XCircle className="h-4 w-4 text-white" />
+//                   </div>
+//                 </CardHeader>
+//                 <CardContent>
+//                   <div className="text-2xl font-semibold text-gray-900">{closedTickets}</div>
+//                   <p className="text-xs text-gray-600 mt-1">Completed</p>
+//                 </CardContent>
+//               </Card>
 //             </div>
 //           </div>
 //         </div>
-
-//         {(user?.role === "client" || user?.role === "clientMember") && (
-//           <Button
-//             onClick={() => router.push("/tickets/new")}
-//             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
-//           >
-//             <Plus className="h-4 w-4 mr-2" />
-//             Create New Ticket
-//           </Button>
-//         )}
-//       </div>
-
-//       {/* Tickets Summary Cards */}
-//       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-//         <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 shadow-sm hover:shadow-md transition-all duration-200">
-//           <CardHeader className="flex flex-row items-center justify-between pb-2">
-//             <CardTitle className="text-sm font-medium text-blue-700">Total Tickets</CardTitle>
-//             <div className="p-2 bg-blue-500 rounded-lg">
-//               <Activity className="h-4 w-4 text-white" />
-//             </div>
-//           </CardHeader>
-//           <CardContent>
-//             <div className="text-2xl font-semibold text-blue-900">{totalTickets}</div>
-//             <p className="text-xs text-blue-600 mt-1">All time</p>
-//           </CardContent>
-//         </Card>
-
-//         <Card className="bg-gradient-to-br from-amber-50 to-orange-100 border border-orange-200 shadow-sm hover:shadow-md transition-all duration-200">
-//           <CardHeader className="flex flex-row items-center justify-between pb-2">
-//             <CardTitle className="text-sm font-medium text-orange-700">Open Tickets</CardTitle>
-//             <div className="p-2 bg-orange-500 rounded-lg">
-//               <AlertCircle className="h-4 w-4 text-white" />
-//             </div>
-//           </CardHeader>
-//           <CardContent>
-//             <div className="text-2xl font-semibold text-orange-900">{openTickets}</div>
-//             <p className="text-xs text-orange-600 mt-1">Pending resolution</p>
-//           </CardContent>
-//         </Card>
-
-//         <Card className="bg-gradient-to-br from-emerald-50 to-green-100 border border-green-200 shadow-sm hover:shadow-md transition-all duration-200">
-//           <CardHeader className="flex flex-row items-center justify-between pb-2">
-//             <CardTitle className="text-sm font-medium text-green-700">Resolved</CardTitle>
-//             <div className="p-2 bg-green-500 rounded-lg">
-//               <CheckCircle2 className="h-4 w-4 text-white" />
-//             </div>
-//           </CardHeader>
-//           <CardContent>
-//             <div className="text-2xl font-semibold text-green-900">{resolvedTickets}</div>
-//             <p className="text-xs text-green-600 mt-1">Ready to close</p>
-//           </CardContent>
-//         </Card>
-
-//         <Card className="bg-gradient-to-br from-slate-50 to-gray-100 border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200">
-//           <CardHeader className="flex flex-row items-center justify-between pb-2">
-//             <CardTitle className="text-sm font-medium text-gray-700">Closed</CardTitle>
-//             <div className="p-2 bg-gray-500 rounded-lg">
-//               <XCircle className="h-4 w-4 text-white" />
-//             </div>
-//           </CardHeader>
-//           <CardContent>
-//             <div className="text-2xl font-semibold text-gray-900">{closedTickets}</div>
-//             <p className="text-xs text-gray-600 mt-1">Completed</p>
-//           </CardContent>
-//         </Card>
-//       </div>
-      
-//     </div>
-//   </div>
-
-
 
 //         <Card className="bg-white border border-gray-200 shadow-sm">
 //           <CardContent className="p-4">
@@ -460,10 +517,20 @@
 //                     </SelectTrigger>
 //                     <SelectContent>
 //                       <SelectItem value="all">All Clients</SelectItem>
-//                       <SelectItem value="AMNSI">AMNSI</SelectItem>
-//                       <SelectItem value="URJA">URJA</SelectItem>
-//                       <SelectItem value="SAIL">SAIL</SelectItem>
-//                       <SelectItem value="JSPL">JSPL</SelectItem>
+//                       {isLoading.clients ? (
+//                         <SelectItem value="loading" disabled>
+//                           <span className="flex items-center gap-2">
+//                             <Loader2 className="h-4 w-4 animate-spin" />
+//                             Loading clients...
+//                           </span>
+//                         </SelectItem>
+//                       ) : (
+//                         clients.map((client) => (
+//                           <SelectItem key={client.client_id} value={client.client_username}>
+//                             {client.client_username}
+//                           </SelectItem>
+//                         ))
+//                       )}
 //                     </SelectContent>
 //                   </Select>
 //                 )}
@@ -484,7 +551,6 @@
 //               <div
 //                 className={`h-1 w-full ${ticket.priority === "high" ? "bg-red-500" : ticket.priority === "medium" ? "bg-blue-500" : ticket.priority === "low" ? "bg-green-500" : "bg-gray-400"}`}
 //               />
-
 //               <CardContent className="p-4">
 //                 <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-4">
 //                   <div className="flex-1 space-y-3">
@@ -540,7 +606,7 @@
 //                         Progress Tracker
 //                       </h4>
 //                       <StatusTracker
-//                         status={ticket.status as "raised" | "in-progress" | "confirmed by oem" | "resolved" | "closed"}
+//                         status={ticket.status as "raised" | "confirmed by oem" | "resolved" | "closed"}
 //                         priority={ticket.priority || "medium"}
 //                         createdAt={ticket.created_at}
 //                       />
@@ -602,13 +668,13 @@
 //                           onClick={() => handleUpdateStatus(ticket)}
 //                           disabled={ticket.status === "resolved"}
 //                         >
-//                           Update Status
+//                           {getNextStatusText(ticket.status || "unknown")}
 //                         </Button>
 //                         <Button
 //                           size="sm"
 //                           className="bg-green-600 hover:bg-green-700 text-white"
 //                           onClick={() => handleCloseTicket(ticket, "admin")}
-//                           disabled={ticket.adminClosed || !ticket.clientClosed}
+//                           disabled={ticket.adminClosed || (ticket.status !== "confirmed by oem" && ticket.status !== "resolved" && ticket.status !== "closed")}
 //                         >
 //                           Close Ticket
 //                         </Button>
@@ -621,6 +687,7 @@
 //                           size="sm"
 //                           className="bg-green-600 hover:bg-green-700 text-white"
 //                           onClick={() => handleCloseTicket(ticket, user.role)}
+//                           disabled={ticket.out_of_scope}
 //                         >
 //                           Close Ticket
 //                         </Button>
@@ -632,7 +699,6 @@
 //           ))}
 //         </div>
 
-//         {/* Empty State */}
 //         {filteredTickets.length === 0 && (
 //           <Card className="bg-white border border-gray-200 shadow-sm">
 //             <CardContent className="p-8 text-center">
@@ -656,7 +722,6 @@
 //           ticket={selectedTicket}
 //         />
 
-//         {/* Update Modal */}
 //         <Dialog
 //           open={isUpdateModalOpen}
 //           onOpenChange={(open) => {
@@ -714,11 +779,18 @@
 //                     Cancel
 //                   </Button>
 //                   <Button
-//                     className="bg-blue-600 hover:bg-blue-700 text-white"
+//                     className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
 //                     onClick={handleStatusUpdate}
-//                     disabled={!comments.trim() || !ticketType}
+//                     disabled={!comments.trim() || !ticketType || isLoading.updateStatus}
 //                   >
-//                     Update Status
+//                     {isLoading.updateStatus ? (
+//                       <>
+//                         <Loader2 className="h-4 w-4 animate-spin" />
+//                         Updating...
+//                       </>
+//                     ) : (
+//                       getNextStatusText(updateTicket.status || "unknown")
+//                     )}
 //                   </Button>
 //                 </DialogFooter>
 //               </div>
@@ -726,7 +798,6 @@
 //           </DialogContent>
 //         </Dialog>
 
-//         {/* Feedback Modal */}
 //         <Dialog
 //           open={isFeedbackModalOpen}
 //           onOpenChange={(open) => {
@@ -796,11 +867,18 @@
 //                     Cancel
 //                   </Button>
 //                   <Button
-//                     className="bg-green-600 hover:bg-green-700 text-white"
+//                     className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
 //                     onClick={handleFeedbackSubmit}
-//                     disabled={!feedback.experience.trim() || feedback.rating === 0}
+//                     disabled={!feedback.experience.trim() || feedback.rating === 0 || isLoading.feedbackSubmit}
 //                   >
-//                     Submit Feedback
+//                     {isLoading.feedbackSubmit ? (
+//                       <>
+//                         <Loader2 className="h-4 w-4 animate-spin" />
+//                         Submitting...
+//                       </>
+//                     ) : (
+//                       "Submit Feedback"
+//                     )}
 //                   </Button>
 //                 </DialogFooter>
 //               </div>
@@ -808,7 +886,6 @@
 //           </DialogContent>
 //         </Dialog>
 
-//         {/* Admin Summary Modal */}
 //         <Dialog
 //           open={isAdminSummaryModalOpen}
 //           onOpenChange={(open) => {
@@ -856,6 +933,7 @@
 //                       type="checkbox"
 //                       checked={adminOutOfScope}
 //                       onChange={(e) => setAdminOutOfScope(e.target.checked)}
+//                       disabled={updateTicket.status !== "confirmed by oem" && updateTicket.status !== "resolved" && updateTicket.status !== "closed"}
 //                       className="w-4 h-4 text-purple-600 bg-white border-gray-300 rounded focus:ring-purple-500"
 //                     />
 //                     <span className="text-sm font-medium text-gray-700">Mark as Out of Scope</span>
@@ -881,11 +959,18 @@
 //                     Cancel
 //                   </Button>
 //                   <Button
-//                     className="bg-green-600 hover:bg-green-700 text-white"
+//                     className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
 //                     onClick={handleAdminSummarySubmit}
-//                     disabled={!adminSummary.trim() || (adminOutOfScope && !adminOutOfScopeReason.trim())}
+//                     disabled={!adminSummary.trim() || (adminOutOfScope && !adminOutOfScopeReason.trim()) || isLoading.adminSummarySubmit}
 //                   >
-//                     Submit Summary
+//                     {isLoading.adminSummarySubmit ? (
+//                       <>
+//                         <Loader2 className="h-4 w-4 animate-spin" />
+//                         Submitting...
+//                       </>
+//                     ) : (
+//                       "Submit Summary"
+//                     )}
 //                   </Button>
 //                 </DialogFooter>
 //               </div>
@@ -898,6 +983,11 @@
 // }
 
 // export default Tickets
+
+
+
+
+
 
 
 
@@ -926,12 +1016,12 @@ import {
   BarChart3,
   Loader2,
 } from "lucide-react"
-import { FileText, PlayCircle, Shield, CheckCircle, CloudIcon as ClosedIcon } from "lucide-react"
+import { FileText, Shield, CheckCircle, CloudIcon as ClosedIcon } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { Badge } from "@/components/ui/badge"
 import { StatusTracker } from "@/components/Tickets/StatusTracker"
 import TicketDetailsModal from "@/components/Tickets/TicketDetailsModal"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import axios from "axios"
 import type { Ticket } from "@/types"
 
@@ -947,11 +1037,12 @@ interface Client {
   name: string
 }
 
-type TicketStatus = "raised" | "in-progress" | "confirmed by oem" | "resolved" | "closed"
+type TicketStatus = "raised" | "confirmed by oem" | "resolved" | "closed"
 
 const Tickets = () => {
   const { user } = useAuth()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [clientFilter, setClientFilter] = useState("all")
@@ -982,19 +1073,31 @@ const Tickets = () => {
   })
 
   const getStatusIcon = (status: string) => {
+    const iconClass = "h-4 w-4 bg-emerald-500 rounded-full p-0.5 text-white"
     switch (status) {
       case "raised":
-        return <FileText className="h-4 w-4" />
-      case "in-progress":
-        return <PlayCircle className="h-4 w-4" />
+        return <FileText className={iconClass} />
       case "confirmed by oem":
-        return <Shield className="h-4 w-4" />
+        return <Shield className={iconClass} />
       case "resolved":
-        return <CheckCircle className="h-4 w-4" />
+        return <CheckCircle className={iconClass} />
       case "closed":
-        return <ClosedIcon className="h-4 w-4" />
+        return <ClosedIcon className={iconClass} />
       default:
-        return <FileText className="h-4 w-4" />
+        return <FileText className={iconClass} />
+    }
+  }
+
+  const getNextStatusText = (currentStatus: string) => {
+    switch (currentStatus) {
+      case "raised":
+        return "Update to Confirmed by OEM"
+      case "confirmed by oem":
+        return "Update to Resolved"
+      case "resolved":
+        return "Update to Closed"
+      default:
+        return "Update Status"
     }
   }
 
@@ -1066,6 +1169,22 @@ const Tickets = () => {
     fetchClients()
   }, [user, router])
 
+  // Handle opening specific ticket from query param
+  useEffect(() => {
+    if (tickets.length === 0) return;
+
+    const ticketId = searchParams.get('ticketId');
+    if (ticketId) {
+      const targetTicket = tickets.find(t => t.ticket_id.toString() === ticketId);
+      if (targetTicket) {
+        setSelectedTicket(targetTicket);
+        setIsTicketModalOpen(true);
+        // Clear the query param without full navigation
+        router.replace('/tickets', { scroll: false });
+      }
+    }
+  }, [tickets, searchParams, router]);
+
   const getPriorityColor = (priority: string | null) => {
     switch (priority) {
       case "high":
@@ -1108,8 +1227,8 @@ const Tickets = () => {
 
   const handleCloseTicket = async (ticket: Ticket, role: "admin" | "client" | "clientMember") => {
     if (role === "admin") {
-      if (!ticket.clientClosed) {
-        alert("Cannot close ticket: Client must close the ticket first.")
+      if (ticket.status !== "confirmed by oem" && ticket.status !== "resolved" && ticket.status !== "closed") {
+        alert("Cannot close ticket: Ticket must be at least in 'confirmed by oem' stage.")
         return
       }
       setUpdateTicket(ticket)
@@ -1119,6 +1238,10 @@ const Tickets = () => {
       setAdminOutOfScopeReason(ticket.out_of_scope_reason || "")
       setIsAdminSummaryModalOpen(true)
     } else {
+      if (ticket.out_of_scope) {
+        alert("Cannot close ticket: Ticket is marked out of scope and can only be closed by admin.")
+        return
+      }
       if (ticket.status !== "resolved") {
         alert("Cannot close ticket: Ticket must be resolved first.")
         return
@@ -1207,10 +1330,10 @@ const Tickets = () => {
                   : t.attachments,
                 out_of_scope: adminOutOfScope,
                 out_of_scope_reason: adminOutOfScope ? adminOutOfScopeReason : null,
-                status: t.clientClosed ? "closed" : t.status as TicketStatus,
+                status: t.clientClosed && !adminOutOfScope ? "closed" : t.status as TicketStatus,
                 updated_at: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
-                closed_at: new Date().toISOString(),
+                closed_at: t.clientClosed && !adminOutOfScope ? new Date().toISOString() : t.closed_at,
               }
             : t,
         ).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -1248,10 +1371,10 @@ const Tickets = () => {
             ? {
                 ...t,
                 clientClosed: true,
-                status: t.adminClosed ? "closed" : t.status as TicketStatus,
+                status: t.adminClosed && !t.out_of_scope ? "closed" : t.status as TicketStatus,
                 updated_at: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
-                closed_at: t.adminClosed ? new Date().toISOString() : t.closed_at,
+                closed_at: t.adminClosed && !t.out_of_scope ? new Date().toISOString() : t.closed_at,
               }
             : t,
         ).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -1493,7 +1616,7 @@ const Tickets = () => {
                         Progress Tracker
                       </h4>
                       <StatusTracker
-                        status={ticket.status as "raised" | "in-progress" | "confirmed by oem" | "resolved" | "closed"}
+                        status={ticket.status as "raised" | "confirmed by oem" | "resolved" | "closed"}
                         priority={ticket.priority || "medium"}
                         createdAt={ticket.created_at}
                       />
@@ -1555,13 +1678,13 @@ const Tickets = () => {
                           onClick={() => handleUpdateStatus(ticket)}
                           disabled={ticket.status === "resolved"}
                         >
-                          Update Status
+                          {getNextStatusText(ticket.status || "unknown")}
                         </Button>
                         <Button
                           size="sm"
                           className="bg-green-600 hover:bg-green-700 text-white"
                           onClick={() => handleCloseTicket(ticket, "admin")}
-                          disabled={ticket.adminClosed || !ticket.clientClosed}
+                          disabled={ticket.adminClosed || (ticket.status !== "confirmed by oem" && ticket.status !== "resolved" && ticket.status !== "closed")}
                         >
                           Close Ticket
                         </Button>
@@ -1574,6 +1697,7 @@ const Tickets = () => {
                           size="sm"
                           className="bg-green-600 hover:bg-green-700 text-white"
                           onClick={() => handleCloseTicket(ticket, user.role)}
+                          disabled={ticket.out_of_scope}
                         >
                           Close Ticket
                         </Button>
@@ -1675,7 +1799,7 @@ const Tickets = () => {
                         Updating...
                       </>
                     ) : (
-                      "Update Status"
+                      getNextStatusText(updateTicket.status || "unknown")
                     )}
                   </Button>
                 </DialogFooter>
@@ -1819,6 +1943,7 @@ const Tickets = () => {
                       type="checkbox"
                       checked={adminOutOfScope}
                       onChange={(e) => setAdminOutOfScope(e.target.checked)}
+                      disabled={updateTicket.status !== "confirmed by oem" && updateTicket.status !== "resolved" && updateTicket.status !== "closed"}
                       className="w-4 h-4 text-purple-600 bg-white border-gray-300 rounded focus:ring-purple-500"
                     />
                     <span className="text-sm font-medium text-gray-700">Mark as Out of Scope</span>

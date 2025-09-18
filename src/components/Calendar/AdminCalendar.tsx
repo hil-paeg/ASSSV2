@@ -1,11 +1,9 @@
-
-
-// import React, { useState, useEffect, useContext } from 'react';
-
+// import React, { useState, useEffect } from 'react';
 // import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 // import { Button } from '@/components/ui/button';
 // import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 // import { useAuth } from '@/contexts/AuthContext';
+
 // interface CalendarEvent {
 //   date: string;
 //   type: 'ticket_raised' | 'site_visit';
@@ -14,11 +12,17 @@
 // }
 
 // const AdminCalendar: React.FC = () => {
-//     const { user, isLoading: authLoading } = useAuth();
+//   const { user } = useAuth();
 //   const [currentMonth, setCurrentMonth] = useState(new Date());
 //   const [events, setEvents] = useState<CalendarEvent[]>([]);
 //   const [loading, setLoading] = useState(true);
 //   const [error, setError] = useState<string | null>(null);
+
+//   // ✅ helper for YYYY-MM-DD in local time
+//   const formatLocalDate = (date: Date) =>
+//     `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+//       date.getDate()
+//     ).padStart(2, '0')}`;
 
 //   useEffect(() => {
 //     const fetchEvents = async () => {
@@ -52,14 +56,14 @@
 
 //         // Combine events
 //         const ticketEvents: CalendarEvent[] = ticketsData.map((ticket: any) => ({
-//           date: new Date(ticket.created_at).toISOString().split('T')[0],
+//           date: formatLocalDate(new Date(ticket.created_at)), // ✅ fixed (no UTC shift)
 //           type: 'ticket_raised' as const,
 //           title: ticket.issue_title,
 //           client: ticket.client?.client_username || 'Unknown',
 //         }));
 
 //         const siteVisitEvents: CalendarEvent[] = siteVisitsData.map((visit: any) => ({
-//           date: new Date(visit.date).toISOString().split('T')[0],
+//           date: formatLocalDate(new Date(visit.date)), // ✅ consistent with local time
 //           type: 'site_visit' as const,
 //           title: 'Site Visit',
 //           client: visit.contract?.client?.client_username || 'Unknown',
@@ -100,9 +104,7 @@
 //     setCurrentMonth(newMonth);
 //   };
 
-//   const formatDate = (date: Date) => {
-//     return date.toISOString().split('T')[0];
-//   };
+//   const formatDate = (date: Date) => formatLocalDate(date);
 
 //   const getEventsForDay = (date: Date) => {
 //     const dateKey = formatDate(date);
@@ -152,7 +154,7 @@
 //               ))}
 //               {monthDays.map((day, index) => {
 //                 const dateKey = formatDate(day);
-//                 const events = getEventsForDay(day);
+//                 const dayEvents = getEventsForDay(day);
 //                 const isToday = day.toDateString() === new Date().toDateString();
 //                 const isCurrentMonth = day.getMonth() === currentMonth.getMonth();
 
@@ -163,14 +165,16 @@
 //                       !isCurrentMonth ? 'text-gray-400' : ''
 //                     }`}
 //                   >
-//                     <div className={`text-sm font-medium ${events.length > 0 ? 'font-bold' : ''}`}>
+//                     <div className={`text-sm font-medium ${dayEvents.length > 0 ? 'font-bold' : ''}`}>
 //                       {day.getDate()}
 //                     </div>
-//                     {events.map((event, idx) => (
+//                     {dayEvents.map((event, idx) => (
 //                       <div
 //                         key={idx}
 //                         className={`mt-1 p-1 rounded text-xs ${
-//                           event.type === 'ticket_raised' ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800'
+//                           event.type === 'ticket_raised'
+//                             ? 'bg-red-200 text-red-800'
+//                             : 'bg-green-200 text-green-800'
 //                         }`}
 //                       >
 //                         <div className="font-bold">{event.client}</div>
@@ -195,15 +199,15 @@
 
 
 
-
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 interface CalendarEvent {
+  id?: number;
   date: string;
   type: 'ticket_raised' | 'site_visit';
   title: string;
@@ -212,6 +216,7 @@ interface CalendarEvent {
 
 const AdminCalendar: React.FC = () => {
   const { user } = useAuth();
+  const router = useRouter();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -255,6 +260,7 @@ const AdminCalendar: React.FC = () => {
 
         // Combine events
         const ticketEvents: CalendarEvent[] = ticketsData.map((ticket: any) => ({
+          id: ticket.ticket_id,
           date: formatLocalDate(new Date(ticket.created_at)), // ✅ fixed (no UTC shift)
           type: 'ticket_raised' as const,
           title: ticket.issue_title,
@@ -312,6 +318,12 @@ const AdminCalendar: React.FC = () => {
 
   const monthDays = getMonthDays(currentMonth);
 
+  const handleEventClick = (event: CalendarEvent) => {
+    if (event.type === 'ticket_raised' && event.id) {
+      router.push(`/tickets?ticketId=${event.id}`);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -367,19 +379,25 @@ const AdminCalendar: React.FC = () => {
                     <div className={`text-sm font-medium ${dayEvents.length > 0 ? 'font-bold' : ''}`}>
                       {day.getDate()}
                     </div>
-                    {dayEvents.map((event, idx) => (
-                      <div
-                        key={idx}
-                        className={`mt-1 p-1 rounded text-xs ${
-                          event.type === 'ticket_raised'
-                            ? 'bg-red-200 text-red-800'
-                            : 'bg-green-200 text-green-800'
-                        }`}
-                      >
-                        <div className="font-bold">{event.client}</div>
-                        {event.type === 'ticket_raised' ? 'Ticket: ' : 'Visit: '} {event.title}
-                      </div>
-                    ))}
+                    {dayEvents.map((event, idx) => {
+                      const isTicketEvent = event.type === 'ticket_raised';
+                      const eventClass = `mt-1 p-1 rounded text-xs ${
+                        isTicketEvent
+                          ? 'bg-red-200 text-red-800 cursor-pointer hover:bg-red-300'
+                          : 'bg-green-200 text-green-800'
+                      }`;
+
+                      return (
+                        <div
+                          key={idx}
+                          className={eventClass}
+                          onClick={() => handleEventClick(event)}
+                        >
+                          <div className="font-bold">{event.client}</div>
+                          {isTicketEvent ? 'Ticket: ' : 'Visit: '} {event.title}
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               })}
