@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
 
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET) as { 
-      id: number; 
+      id: string; 
       role: 'admin' | 'client' | 'clientMember'; 
       clientId?: number;
       username?: string;
@@ -92,7 +92,7 @@ export async function GET(req: NextRequest) {
 
     if (decoded.role === 'admin') {
       const admin = await prisma.admin.findUnique({
-        where: { admin_id: decoded.id },
+        where: { admin_id: Number(decoded.id) },
         select: { 
           admin_id: true,
           username: true,
@@ -160,7 +160,7 @@ export async function GET(req: NextRequest) {
 
     } else if (decoded.role === 'clientMember') {
       const member = await prisma.clientMember.findUnique({
-        where: { member_id: decoded.id },
+        where: { member_id: Number(decoded.id) },
         include: {
           client: { 
             select: { 
